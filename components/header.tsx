@@ -3,10 +3,9 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Search, ShoppingCart, Menu } from "lucide-react"
+import { Search, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useProductStore } from "@/lib/store"
 
@@ -34,7 +33,7 @@ export function Header() {
             <SheetContent side="left" className="w-[240px] sm:w-[300px]">
               <nav className="flex flex-col gap-4 mt-8">
                 <Button variant="ghost" onClick={() => setCategoryFilter("")}>
-                  All Products
+                  All Assets
                 </Button>
                 <Button variant="ghost" onClick={() => setCategoryFilter("office")}>
                   Office
@@ -52,6 +51,7 @@ export function Header() {
             </SheetContent>
           </Sheet>
           <a href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
             <span className="font-bold text-xl md:text-2xl text-primary">AR you buying this</span>
           </a>
         </div>
@@ -79,44 +79,15 @@ export function Header() {
         <div className="flex items-center gap-2">
           <form onSubmit={handleSearch} className="relative hidden md:flex items-center">
             <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              name="search"
-              placeholder="Search products..."
-              className="w-[200px] lg:w-[300px] pl-8"
-            />
+            <Input type="search" name="search" placeholder="Search assets..." className="w-[200px] lg:w-[300px] pl-8" />
           </form>
-
-          <Button variant="outline" size="icon" className="relative">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
-              0
-            </span>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1">
-                Create
-                <span className="hidden md:inline">New</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent("open-customize-modal"))}>
-                Customize Existing Asset
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent("open-generate-modal"))}>
-                Generate New Asset
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
       <div className="container md:hidden px-4 pb-2">
         <form onSubmit={handleSearch} className="relative flex items-center">
           <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" name="search" placeholder="Search products..." className="w-full pl-8" />
+          <Input type="search" name="search" placeholder="Search assets..." className="w-full pl-8" />
         </form>
       </div>
     </header>

@@ -19,19 +19,19 @@ export function ProductGrid() {
   }, [searchQuery, categoryFilter])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Featured Products</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Available Assets</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? "s" : ""} found
+            {filteredProducts.length} asset{filteredProducts.length !== 1 ? "s" : ""} found
           </span>
         </div>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[400px] text-center">
-          <h3 className="text-xl font-semibold">No products found</h3>
+          <h3 className="text-xl font-semibold">No assets found</h3>
           <p className="text-muted-foreground mt-2">Try adjusting your search or filter criteria</p>
         </div>
       ) : (

@@ -7,9 +7,10 @@ interface ModelViewerProps {
   iosSrc: string
   poster: string
   alt: string
+  modelType?: string
 }
 
-export function ModelViewer({ src, iosSrc, poster, alt }: ModelViewerProps) {
+export function ModelViewer({ src, iosSrc, poster, alt, modelType = 'default' }: ModelViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -25,9 +26,18 @@ export function ModelViewer({ src, iosSrc, poster, alt }: ModelViewerProps) {
     modelViewer.setAttribute("camera-controls", "")
     modelViewer.setAttribute("auto-rotate", "")
     modelViewer.setAttribute("ar", "")
+    modelViewer.setAttribute("ar-modes", "webxr scene-viewer quick-look")
+    modelViewer.setAttribute("ar-scale", "auto")
+    modelViewer.setAttribute("data-product-id", src.split("/").pop()?.split(".")[0] || "")
     modelViewer.style.width = "100%"
     modelViewer.style.height = "100%"
     modelViewer.style.backgroundColor = "#f1f5f9" // Add a light background color
+
+    // Conditionally set additional attributes based on model type
+    if (modelType === 'advanced') {
+      modelViewer.setAttribute("environment-image", "neutral")
+      modelViewer.setAttribute("exposure", "1")
+    }
 
     // Clear container and append model-viewer
     containerRef.current.innerHTML = ""
@@ -38,7 +48,7 @@ export function ModelViewer({ src, iosSrc, poster, alt }: ModelViewerProps) {
         containerRef.current.innerHTML = ""
       }
     }
-  }, [src, iosSrc, poster, alt])
+  }, [src, iosSrc, poster, alt, modelType])
 
   return <div ref={containerRef} className="w-full h-full" />
 }

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, CuboidIcon as Cube, Share2 } from "lucide-react"
+import { CuboidIcon as Cube } from "lucide-react"
 import type { Product } from "@/lib/types"
 import { ModelViewer } from "@/components/model-viewer"
 
@@ -26,6 +26,7 @@ export function ProductCard({ product }: ProductCardProps) {
           iosSrc={product.iosModelPath}
           poster={posterPath}
           alt={`3D model of ${product.name}`}
+          data-product-id={product.id}
         />
         <div className="absolute top-2 right-2 flex gap-1">
           {product.isNew && <Badge className="bg-green-500 hover:bg-green-600">New</Badge>}
@@ -62,15 +63,9 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0 flex flex-col gap-2">
         <div className="flex gap-2 w-full">
-          <Button className="flex-1" size="sm">
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Add to Cart
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowDetails(!showDetails)}>
             {showDetails ? "Hide Details" : "Show Details"}
           </Button>
-        </div>
-        <div className="flex gap-2 w-full">
           <Button
             variant="outline"
             size="sm"
@@ -80,11 +75,19 @@ export function ProductCard({ product }: ProductCardProps) {
             <Cube className="h-4 w-4 mr-2" />
             Customize
           </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
         </div>
+        <Button
+          className="w-full"
+          onClick={() => {
+            // Trigger AR view on the model-viewer element
+            const modelViewer = document.querySelector(`model-viewer[data-product-id="${product.id}"]`)
+            if (modelViewer) {
+              ;(modelViewer as any).activateAR()
+            }
+          }}
+        >
+          View in AR
+        </Button>
       </CardFooter>
     </Card>
   )
