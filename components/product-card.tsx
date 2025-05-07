@@ -76,18 +76,6 @@ export function ProductCard({ product }: ProductCardProps) {
             Customize
           </Button>
         </div>
-        <Button
-          className="w-full"
-          onClick={() => {
-            // Trigger AR view on the model-viewer element
-            const modelViewer = document.querySelector(`model-viewer[data-product-id="${product.id}"]`)
-            if (modelViewer) {
-              ;(modelViewer as any).activateAR()
-            }
-          }}
-        >
-          View in AR
-        </Button>
       </CardFooter>
     </Card>
   )

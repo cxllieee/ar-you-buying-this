@@ -166,26 +166,7 @@ export function GenerateAssetSection() {
 
       {generationComplete && (
         <div className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>View in AR</CardTitle>
-              <CardDescription>See how your generated model looks in your space</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full"
-                onClick={() => {
-                  // Find the model-viewer element and activate AR
-                  const modelViewer = document.querySelector("model-viewer")
-                  if (modelViewer) {
-                    ;(modelViewer as any).activateAR()
-                  }
-                }}
-              >
-                View in AR
-              </Button>
-            </CardContent>
-          </Card>
+          {/* View in AR Card removed as per request */}
         </div>
       )}
     </div>
