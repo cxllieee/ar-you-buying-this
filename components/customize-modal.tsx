@@ -17,7 +17,6 @@ import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ModelViewer } from "@/components/model-viewer"
 import type { Product } from "@/lib/types"
-import { products } from "@/lib/products"
 
 export function CustomizeModal() {
   const [open, setOpen] = useState(false)
@@ -30,7 +29,7 @@ export function CustomizeModal() {
 
   useEffect(() => {
     const handleOpenModal = (e: Event) => {
-      const product = (e as CustomEvent).detail || products[0]
+      const product = (e as CustomEvent).detail
       setSelectedProduct(product)
       setOpen(true)
     }
