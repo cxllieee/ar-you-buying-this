@@ -1,0 +1,114 @@
+{
+  "RetailAssets": [
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "office-chair" },
+          "name": { "S": "Office Chair" },
+          "description": { "S": "Ergonomic office chair with adjustable height and lumbar support." },
+          "price": { "N": "249.99" },
+          "category": { "S": "office" },
+          "modelPath": { "S": "/models/office_chair.glb" },
+          "iosModelPath": { "S": "/models/Office_Chair.usdz" },
+          "posterPath": { "S": "/OfficeChairBG.png" },
+          "dimensions": { "S": "24\"W x 24\"D x 40\"H" },
+          "material": { "S": "Mesh & Foam" },
+          "color": { "S": "Black" },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "coffee-shop-set" },
+          "name": { "S": "Coffee Shop Furniture Set" },
+          "description": { "S": "Classic coffee shop set with round table and four chairs." },
+          "price": { "N": "599.99" },
+          "category": { "S": "furniture" },
+          "modelPath": { "S": "models/coffeeshop_furniture_set.glb" },
+          "iosModelPath": { "S": "models/Coffeeshop_Furniture_Set.usdz" },
+          "posterPath": { "S": "CoffeeShop.png" },
+          "dimensions": { "S": "Table: 36\"D x 30\"H, Chair: 16\"W x 16\"D x 36\"H" },
+          "material": { "S": "Metal & Wood" },
+          "color": { "S": "Black/Brown" },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "sofa" },
+          "name": { "S": "Sofa" },
+          "description": { "S": "Modern 3-seater sofa with plush cushions." },
+          "price": { "N": "899.99" },
+          "category": { "S": "furniture" },
+          "modelPath": { "S": "models/sofa_3230.glb" },
+          "iosModelPath": { "S": "models/Sofa_3230.usdz" },
+          "posterPath": { "S": "Sofa.png" },
+          "dimensions": { "S": "84\"W x 36\"D x 34\"H" },
+          "material": { "S": "Fabric" },
+          "color": { "S": "Light Grey" },
+          "isNew": { "BOOL": true },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "round-sofa" },
+          "name": { "S": "Round Sofa" },
+          "description": { "S": "Circular sofa perfect for lounges and waiting areas." },
+          "price": { "N": "1299.99" },
+          "category": { "S": "furniture" },
+          "modelPath": { "S": "models/sofa.glb" },
+          "iosModelPath": { "S": "models/Sofa.usdz" },
+          "posterPath": { "S": "RoundSofa.png" },
+          "dimensions": { "S": "60\" Diameter x 32\"H" },
+          "material": { "S": "Velvet" },
+          "color": { "S": "Cream" },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "round-table" },
+          "name": { "S": "Round Table Furniture" },
+          "description": { "S": "Elegant round table for dining or meetings." },
+          "price": { "N": "449.99" },
+          "category": { "S": "furniture" },
+          "modelPath": { "S": "models/round_table_furniture_model.glb" },
+          "iosModelPath": { "S": "models/Round_Table_Furniture_Model.usdz" },
+          "posterPath": { "S": "RoundTable.png" },
+          "dimensions": { "S": "48\" Diameter x 30\"H" },
+          "material": { "S": "Wood" },
+          "color": { "S": "Dark Walnut" },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "id": { "S": "desk-lamp" },
+          "name": { "S": "Modern Desk Lamp" },
+          "description": { "S": "Adjustable LED desk lamp with multiple brightness settings." },
+          "price": { "N": "79.99" },
+          "category": { "S": "office" },
+          "modelPath": { "S": "/models/office_chair.glb" },
+          "iosModelPath": { "S": "/models/Office_Chair.usdz" },
+          "posterPath": { "S": "OfficeChairBG.png" },
+          "dimensions": { "S": "6\"W x 6\"D x 18\"H" },
+          "material": { "S": "Metal & Plastic" },
+          "color": { "S": "Silver" },
+          "isNew": { "BOOL": true },
+          "isCustomizable": { "BOOL": true }
+        }
+      }
+    }
+  ]
+} 

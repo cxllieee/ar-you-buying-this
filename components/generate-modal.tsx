@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 import { useState } from "react"
 import {
@@ -17,13 +17,42 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Upload, ImageIcon, MessageSquare } from "lucide-react"
+import { Loader2, Upload, ImageIcon, MessageSquare, Camera } from "lucide-react"
+import { ModelViewer } from "@/components/model-viewer"
+
+interface AssetData {
+  id: string
+  name: string
+  description: string
+  price: number
+  category: string
+  modelPath: string
+  iosModelPath: string
+  posterPath: string
+  dimensions: string
+  material: string
+  color: string
+  isCustomizable: boolean
+}
 
 export function GenerateModal() {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("text")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedPreview, setGeneratedPreview] = useState<string | null>(null)
+  const [generatedModel, setGeneratedModel] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [formData, setFormData] = useState<Partial<AssetData>>({
+    name: "",
+    description: "",
+    category: "furniture",
+    price: 0,
+    dimensions: "",
+    material: "",
+    color: "",
+    isCustomizable: true
+  })
 
   useEffect(() => {
     const handleOpenModal = () => setOpen(true)
@@ -31,15 +60,83 @@ export function GenerateModal() {
     return () => window.removeEventListener("open-generate-modal", handleOpenModal)
   }, [])
 
-  const handleGenerate = () => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleCameraCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      const video = document.createElement('video')
+      video.srcObject = stream
+      await video.play()
+      
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      ctx?.drawImage(video, 0, 0)
+      
+      stream.getTracks().forEach(track => track.stop())
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' })
+          setSelectedImage(file)
+          setImagePreview(URL.createObjectURL(blob))
+        }
+      }, 'image/jpeg')
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      alert('Unable to access camera. Please check your permissions.')
+    }
+  }
+
+  const handleGenerate = async () => {
+    if (!formData.name || (!formData.description && !selectedImage)) return
+
     setIsGenerating(true)
 
-    // Simulate generation process
-    setTimeout(() => {
+    try {
+      const requestData = new FormData()
+      requestData.append('name', formData.name)
+      requestData.append('description', formData.description || '')
+      requestData.append('category', formData.category || 'furniture')
+      requestData.append('price', formData.price?.toString() || '0')
+      requestData.append('dimensions', formData.dimensions || '')
+      requestData.append('material', formData.material || '')
+      requestData.append('color', formData.color || '')
+      requestData.append('isCustomizable', formData.isCustomizable?.toString() || 'true')
+      
+      if (selectedImage) {
+        requestData.append('image', selectedImage)
+      }
+
+      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-asset', {
+        method: 'POST',
+        body: requestData
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate 3D model')
+      }
+
+      const data = await response.json()
+      setGeneratedModel(data.modelUrl)
+    } catch (error) {
+      console.error('Error generating 3D model:', error)
+      alert('Failed to generate 3D model. Please try again.')
+    } finally {
       setIsGenerating(false)
-      // In a real app, this would be the URL to the generated 3D model
-      setGeneratedPreview("/placeholder.svg?height=400&width=400")
-    }, 3000)
+    }
   }
 
   return (
@@ -64,27 +161,36 @@ export function GenerateModal() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <TabsContent value="text" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label htmlFor="product-name">Product Name</Label>
-                  <Input id="product-name" placeholder="Modern Office Chair" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="product-description">Detailed Description</Label>
-                  <Textarea
-                    id="product-description"
-                    placeholder="Describe the product in detail, including colors, materials, style, etc."
-                    className="min-h-[150px]"
+                  <Label htmlFor="asset-name">Asset Name</Label>
+                  <Input
+                    id="asset-name"
+                    placeholder="Enter asset name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select defaultValue="furniture">
-                    <SelectTrigger id="category">
+                  <Label htmlFor="asset-description">Description</Label>
+                  <Textarea
+                    id="asset-description"
+                    placeholder="Describe the 3D model in detail"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-category">Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger id="asset-category">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -92,28 +198,117 @@ export function GenerateModal() {
                       <SelectItem value="office">Office</SelectItem>
                       <SelectItem value="retail">Retail</SelectItem>
                       <SelectItem value="industrial">Industrial</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-price">Price</Label>
+                  <Input
+                    id="asset-price"
+                    type="number"
+                    placeholder="Enter price"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-dimensions">Dimensions</Label>
+                  <Input
+                    id="asset-dimensions"
+                    placeholder='24"W x 24"D x 40"H'
+                    value={formData.dimensions}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, dimensions: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-material">Material</Label>
+                  <Input
+                    id="asset-material"
+                    placeholder="e.g., Mesh & Foam"
+                    value={formData.material}
+                    onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset-color">Color</Label>
+                  <Input
+                    id="asset-color"
+                    placeholder="e.g., Black"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  />
                 </div>
               </TabsContent>
 
               <TabsContent value="image" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label htmlFor="product-name-image">Product Name</Label>
-                  <Input id="product-name-image" placeholder="Modern Office Chair" />
+                  <Label htmlFor="asset-name-image">Asset Name</Label>
+                  <Input
+                    id="asset-name-image"
+                    placeholder="Enter asset name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Reference Image</Label>
                   <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground text-center">
-                      Drag and drop an image, or click to browse
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-2">
-                      Upload Image
-                    </Button>
+                    {imagePreview ? (
+                      <div className="relative w-full aspect-square">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full h-full object-contain rounded-md"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => {
+                            setSelectedImage(null)
+                            setImagePreview(null)
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground text-center">
+                          Drag and drop an image, or click to browse
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            Upload Image
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCameraCapture}
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Take Photo
+                          </Button>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -122,11 +317,17 @@ export function GenerateModal() {
                   <Textarea
                     id="additional-notes"
                     placeholder="Any specific details or modifications to the reference image"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
               </TabsContent>
 
-              <Button className="w-full mt-4" onClick={handleGenerate} disabled={isGenerating}>
+              <Button
+                className="w-full mt-4"
+                onClick={handleGenerate}
+                disabled={isGenerating || !formData.name || (!formData.description && !selectedImage)}
+              >
                 {isGenerating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -138,18 +339,19 @@ export function GenerateModal() {
               </Button>
             </div>
 
-            <div className="bg-slate-100 rounded-md overflow-hidden flex items-center justify-center">
-              {generatedPreview ? (
-                <img
-                  src={generatedPreview || "/placeholder.svg"}
-                  alt="Generated 3D model preview"
-                  className="w-full h-full object-contain"
+            <div className="bg-slate-100 rounded-md overflow-hidden">
+              {generatedModel ? (
+                <ModelViewer
+                  src={generatedModel}
+                  iosSrc={generatedModel.replace(".glb", ".usdz")}
+                  poster={imagePreview || "/placeholder.svg"}
+                  alt="Generated 3D model"
                 />
               ) : (
-                <div className="text-center p-6">
-                  <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground opacity-30" />
+                <div className="h-[400px] flex flex-col items-center justify-center text-center p-6">
+                  <ImageIcon className="h-16 w-16 text-muted-foreground opacity-30" />
                   <p className="text-muted-foreground mt-2">
-                    {isGenerating ? "Generating preview..." : "Preview will appear here"}
+                    {isGenerating ? "Generating 3D model..." : "Preview will appear here"}
                   </p>
                 </div>
               )}
@@ -161,14 +363,24 @@ export function GenerateModal() {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          {generatedPreview && (
+          {generatedModel && (
             <Button
               onClick={() => {
-                alert(
-                  "3D model saved to your assets! In a real application, this would add the model to your inventory.",
-                )
+                alert("3D model saved to your assets!")
                 setOpen(false)
-                setGeneratedPreview(null)
+                setGeneratedModel(null)
+                setSelectedImage(null)
+                setImagePreview(null)
+                setFormData({
+                  name: "",
+                  description: "",
+                  category: "furniture",
+                  price: 0,
+                  dimensions: "",
+                  material: "",
+                  color: "",
+                  isCustomizable: true
+                })
               }}
             >
               Save to My Assets
