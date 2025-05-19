@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react"
 interface ModelViewerProps {
   src: string
   iosSrc: string
-  poster: string
+  poster?: string
   alt: string
   modelType?: string
 }
@@ -21,7 +21,9 @@ export function ModelViewer({ src, iosSrc, poster, alt, modelType = 'default' }:
     const modelViewer = document.createElement("model-viewer")
     modelViewer.setAttribute("src", src)
     modelViewer.setAttribute("ios-src", iosSrc)
-    modelViewer.setAttribute("poster", poster)
+    if (poster) {
+      modelViewer.setAttribute("poster", poster)
+    }
     modelViewer.setAttribute("alt", alt)
     modelViewer.setAttribute("shadow-intensity", "1")
     modelViewer.setAttribute("camera-controls", "")

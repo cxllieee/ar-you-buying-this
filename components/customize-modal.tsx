@@ -55,11 +55,6 @@ export function CustomizeModal() {
             <ModelViewer
               src={selectedProduct.modelPath}
               iosSrc={selectedProduct.iosModelPath}
-              poster={
-                selectedProduct.posterPath.startsWith("/")
-                  ? selectedProduct.posterPath
-                  : `/${selectedProduct.posterPath}`
-              }
               alt={`3D model of ${selectedProduct.name}`}
             />
           </div>

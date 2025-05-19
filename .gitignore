@@ -44,3 +44,12 @@ local/
 
 # DynamoDB
 dynamodb/
+
+# Lambda folder ignores
+lambda/*.pyc
+lambda/__pycache__/
+lambda/*.env
+lambda/*.local
+lambda/*_test.py
+lambda/*.log
+lambda/*.tmp

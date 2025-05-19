@@ -16,7 +16,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
   // Use a default poster if the product's poster path is not available
-  const posterPath = product.posterPath.startsWith("/") ? product.posterPath : `/${product.posterPath}`
+  const posterPath = product.posterPath
+    ? (product.posterPath.startsWith("/") ? product.posterPath : `/${product.posterPath}`)
+    : "/placeholder.svg";
 
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg">
@@ -24,7 +26,6 @@ export function ProductCard({ product }: ProductCardProps) {
         <ModelViewer
           src={product.modelPath}
           iosSrc={product.iosModelPath}
-          poster={posterPath}
           alt={`3D model of ${product.name}`}
           data-product-id={product.id}
         />

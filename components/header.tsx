@@ -47,6 +47,9 @@ export function Header() {
                 <Button variant="ghost" onClick={() => setCategoryFilter("industrial")}>
                   Industrial
                 </Button>
+                <Button variant="ghost" onClick={() => setCategoryFilter("generated-assets")}>
+                  Generated Assets
+                </Button>
               </nav>
             </SheetContent>
           </Sheet>
@@ -72,6 +75,9 @@ export function Header() {
             </Button>
             <Button variant="ghost" onClick={() => setCategoryFilter("industrial")}>
               Industrial
+            </Button>
+            <Button variant="ghost" onClick={() => setCategoryFilter("generated-assets")}>
+              Generated Assets
             </Button>
           </nav>
         </div>

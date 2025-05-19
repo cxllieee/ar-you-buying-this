@@ -46,12 +46,9 @@ def lambda_handler(event, context):
         items = response.get('Items', [])
         for item in items:
             # Extract the S3 key from the stored URL or path
-            # Example: "public/models/office_chair.glb"
             model_key = item['modelPath'].split('.com/')[1]
-            poster_key = item['posterPath'].split('.com/')[1]
             ios_key = item['iosModelPath'].split('.com/')[1]
             item['modelPath'] = get_cached_presigned_url(model_key)
-            item['posterPath'] = get_cached_presigned_url(poster_key)
             item['iosModelPath'] = get_cached_presigned_url(ios_key)
 
         result = {

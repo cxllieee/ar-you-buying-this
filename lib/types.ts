@@ -6,7 +6,6 @@ export interface Product {
   category: string
   modelPath: string
   iosModelPath: string
-  posterPath: string
   dimensions: string
   material: string
   color: string

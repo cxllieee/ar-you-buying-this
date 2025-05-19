@@ -29,7 +29,6 @@ interface AssetData {
   category: string
   modelPath: string
   iosModelPath: string
-  posterPath: string
   dimensions: string
   material: string
   color: string
@@ -347,7 +346,6 @@ export function GenerateModal() {
                 <ModelViewer
                   src={generatedModel}
                   iosSrc={generatedModel.replace(".glb", ".usdz")}
-                  poster={imagePreview || "/placeholder.svg"}
                   alt="Generated 3D model"
                 />
               ) : (
