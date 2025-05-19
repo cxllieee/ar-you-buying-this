@@ -30,10 +30,10 @@ export default function Home() {
             <ol className="list-decimal list-inside text-gray-700 space-y-1 mb-2">
               <li>Browse 3D retail assets</li>
               <li>Generate your own assets</li>
-              <li>Preview them in your space using your device's camera</li>
+              <li>Preview them in your space using your device&apos;s camera</li>
             </ol>
             <p className="text-gray-700 mb-2">
-              Can't find what you want? Just describe it—our AI will create a 3D model for you. Place it in your room, walk around it, and customize in real time.
+              Can&apos;t find what you want? Just describe it—our AI will create a 3D model for you. Place it in your room, walk around it, and customize in real time.
             </p>
             <h3 className="font-semibold mb-1">Get started:</h3>
             <ul className="list-disc list-inside text-gray-700 space-y-1">

@@ -10,6 +10,7 @@ import { ModelViewer } from "@/components/model-viewer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Image from "next/image"
 
 interface AssetData {
   id: string
@@ -78,8 +79,8 @@ export function GenerateAssetSection() {
           setImagePreview(URL.createObjectURL(blob))
         }
       }, 'image/jpeg')
-    } catch (error) {
-      console.error('Error accessing camera:', error)
+    } catch (_error) {
+      console.error('Error accessing camera:', _error)
       alert('Unable to access camera. Please check your permissions.')
     }
   }
@@ -115,8 +116,8 @@ export function GenerateAssetSection() {
 
       const data = await response.json()
       setGeneratedModel(data.modelUrl)
-    } catch (error) {
-      console.error('Error generating 3D model:', error)
+    } catch (_error) {
+      console.error('Error generating 3D model:', _error)
       alert('Failed to generate 3D model. Please try again.')
     } finally {
       setIsGenerating(false)
@@ -160,7 +161,7 @@ export function GenerateAssetSection() {
       if (!response.ok) throw new Error('Failed to save asset');
       alert('3D model saved to your assets!');
       handleReset();
-    } catch (error) {
+    } catch {
       alert('Failed to save asset.');
     }
   }
@@ -290,9 +291,11 @@ export function GenerateAssetSection() {
                 <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2">
                   {imagePreview ? (
                     <div className="relative w-full aspect-square">
-                      <img
+                      <Image
                         src={imagePreview}
                         alt="Preview"
+                        width={200}
+                        height={200}
                         className="w-full h-full object-contain rounded-md"
                       />
                       <Button

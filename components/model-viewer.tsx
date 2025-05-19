@@ -14,7 +14,8 @@ export function ModelViewer({ src, iosSrc, poster, alt, modelType = 'default' }:
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!containerRef.current) return
+    const stableContainer = containerRef.current;
+    if (!stableContainer) return
 
     // Create model-viewer element
     const modelViewer = document.createElement("model-viewer")
@@ -40,12 +41,12 @@ export function ModelViewer({ src, iosSrc, poster, alt, modelType = 'default' }:
     }
 
     // Clear container and append model-viewer
-    containerRef.current.innerHTML = ""
-    containerRef.current.appendChild(modelViewer)
+    stableContainer.innerHTML = ""
+    stableContainer.appendChild(modelViewer)
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ""
+      if (stableContainer) {
+        stableContainer.innerHTML = ""
       }
     }
   }, [src, iosSrc, poster, alt, modelType])

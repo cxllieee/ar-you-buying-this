@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Upload, ImageIcon, MessageSquare, Camera } from "lucide-react"
 import { ModelViewer } from "@/components/model-viewer"
+import Image from "next/image"
 
 interface AssetData {
   id: string
@@ -260,10 +261,12 @@ export function GenerateModal() {
                   <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2">
                     {imagePreview ? (
                       <div className="relative w-full aspect-square">
-                        <img
+                        <Image
                           src={imagePreview}
                           alt="Preview"
                           className="w-full h-full object-contain rounded-md"
+                          width={100}
+                          height={100}
                         />
                         <Button
                           variant="destructive"

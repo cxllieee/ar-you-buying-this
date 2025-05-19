@@ -19,9 +19,32 @@ export function ProductGrid() {
           throw new Error('Failed to fetch products')
         }
         const data = await response.json()
-        setProducts(data)
+        if (Array.isArray(data.items)) {
+          // Filter out invalid products (missing id, name, or modelPath)
+          const validProducts = data.items.filter(
+            (item: any) =>
+              item &&
+              typeof item.id === 'string' &&
+              typeof item.name === 'string' &&
+              typeof item.modelPath === 'string'
+          )
+          setProducts(validProducts)
+        } else if (Array.isArray(data)) {
+          const validProducts = data.filter(
+            (item: any) =>
+              item &&
+              typeof item.id === 'string' &&
+              typeof item.name === 'string' &&
+              typeof item.modelPath === 'string'
+          )
+          setProducts(validProducts)
+        } else {
+          setProducts([])
+          setError(data.error || 'Unexpected response from server')
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
+        setProducts([])
       } finally {
         setIsLoading(false)
       }
@@ -30,11 +53,13 @@ export function ProductGrid() {
     fetchProducts()
   }, [])
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = !searchQuery || product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = !categoryFilter || product.category === categoryFilter
-    return matchesSearch && matchesCategory
-  })
+  const filteredProducts = Array.isArray(products)
+    ? products.filter((product) => {
+        const matchesSearch = !searchQuery || product.name.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesCategory = !categoryFilter || product.category === categoryFilter
+        return matchesSearch && matchesCategory
+      })
+    : []
 
   if (isLoading) {
     return (
@@ -74,9 +99,11 @@ export function ProductGrid() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {filteredProducts
+            .filter(product => product.modelPath)
+            .map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
         </div>
       )}
     </div>

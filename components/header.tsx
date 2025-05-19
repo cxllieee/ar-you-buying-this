@@ -2,15 +2,15 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { Search, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useProductStore } from "@/lib/store"
+import Link from "next/link"
+import Image from "next/image"
 
 export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { setSearchQuery, setCategoryFilter } = useProductStore()
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,10 +50,10 @@ export function Header() {
               </nav>
             </SheetContent>
           </Sheet>
-          <a href="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.png" alt="Logo" className="h-8 w-auto" width={32} height={32} />
             <span className="font-bold text-xl md:text-2xl text-primary">AR you buying this</span>
-          </a>
+          </Link>
         </div>
 
         <div className="hidden md:flex items-center gap-6">
