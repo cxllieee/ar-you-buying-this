@@ -10,8 +10,10 @@ import { GenerateAssetSection } from "@/components/generate-asset-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CuboidIcon, Search } from "lucide-react"
 import Image from "next/image"
-import Lottie from "lottie-react"
+import dynamic from "next/dynamic"
 import animationData from "../animation/Animation - 1747803212907.json"
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false })
 
 export default function Home() {
   const [showDemo, setShowDemo] = useState(false)

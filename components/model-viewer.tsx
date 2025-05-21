@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react"
 
 interface ModelViewerProps {
   src: string
-  iosSrc: string
+  iosSrc?: string
   poster?: string
   alt: string
   modelType?: string
@@ -20,7 +20,9 @@ export function ModelViewer({ src, iosSrc, poster, alt, modelType = 'default' }:
     // Create model-viewer element
     const modelViewer = document.createElement("model-viewer")
     modelViewer.setAttribute("src", src)
-    modelViewer.setAttribute("ios-src", iosSrc)
+    if (iosSrc) {
+      modelViewer.setAttribute("ios-src", iosSrc)
+    }
     if (poster) {
       modelViewer.setAttribute("poster", poster)
     }

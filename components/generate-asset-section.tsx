@@ -224,6 +224,94 @@ export function GenerateAssetSection() {
     }
   };
 
+  // const handleGenerateImage = async () => {
+  //   setIsGeneratingImage(true);
+  //   setImageError(null);
+  //   setGeneratedImage(null);
+  //   try {
+  //     const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ prompt: imagePrompt })
+  //     });
+  //     if (!response.ok) throw new Error("Failed to generate image");
+  //     const data = await response.json();
+  //     setGeneratedImage(data.imageUrl);
+  //     if (!formData.name) {
+  //       const match = data.imageUrl.match(/generated-images\/(.*?)\.png/);
+  //       if (match && match[1]) {
+  //         setFormData({ ...formData, name: match[1] });
+  //       }
+  //     }
+  //   } catch (err) {
+  //     setImageError("Image generation failed. Try again.");
+  //   } finally {
+  //     setIsGeneratingImage(false);
+  //   }
+  // };
+
+  // const handleGenerate3DModel = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsGenerating3D(true);
+  //   setGenerate3DError(null);
+  //   setGeneratedModel(null);
+  //   try {
+  //     if (!generatedImage) throw new Error('No generated image to use for 3D model.');
+      
+  //     // 1. Start 3D job
+  //     const createRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/create-3d-job', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ s3uri: generatedImage })
+  //     });
+  //     if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
+  //     const createData = await createRes.json();
+  //     const commandId = createData.commandId || createData['commandId'] || (typeof createData === 'string' && createData.match(/commandId: (.+)/)?.[1]);
+  //     console.log('Received commandId from create-3d-job:', commandId);
+  //     if (!commandId) throw new Error('No commandId returned from backend.');
+      
+  //     // 2. Poll for job status
+  //     let status = '';
+  //     let glbPresignedUrl = '';
+  //     for (let i = 0; i < 60; i++) { // up to 5 min
+  //       console.log('Polling check-3d-job with commandId:', commandId);
+  //       const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({ commandId })
+  //       });
+  //       const checkData = await checkRes.json();
+  //       status = checkData.status;
+  //       glbPresignedUrl = checkData['glb_presigned_url'] || '';
+  //       if (status === 'Success' && glbPresignedUrl) break;
+  //       if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
+  //       await new Promise(res => setTimeout(res, 5000)); // wait 5s
+  //     }
+      
+  //     if (status !== 'Success' || !glbPresignedUrl) {
+  //       throw new Error('3D model not generated or URL missing.');
+  //     }
+
+  //     // Use the presigned URL directly
+  //     setGeneratedModel(glbPresignedUrl);
+  //   } catch (err: any) {
+  //     setGenerate3DError(err.message || '3D model generation failed.');
+  //   } finally {
+  //     setIsGenerating3D(false);
+  //   }
+  // };
+
+  function presignedUrlToS3Uri(url: string): string | null {
+    // Example: https://bucket.s3.amazonaws.com/key.png?... => s3://bucket/key.png
+    try {
+      const match = url.match(/^https:\/\/(.+?)\.s3\.amazonaws\.com\/(.+?)(\?|$)/);
+      if (!match) return null;
+      return `s3://${match[1]}/${match[2]}`;
+    } catch {
+      return null;
+    }
+  }
+
   const handleGenerate3DModel = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating3D(true);
@@ -231,22 +319,21 @@ export function GenerateAssetSection() {
     setGeneratedModel(null);
     try {
       if (!generatedImage) throw new Error('No generated image to use for 3D model.');
-      
+      const s3uri = presignedUrlToS3Uri(generatedImage);
+      if (!s3uri) throw new Error('Could not extract S3 URI from image URL.');
       // 1. Start 3D job
       const createRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/create-3d-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ s3uri: generatedImage })
+        body: JSON.stringify({ s3uri })
       });
       if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
       const createData = await createRes.json();
       const commandId = createData.commandId || createData['commandId'] || (typeof createData === 'string' && createData.match(/commandId: (.+)/)?.[1]);
       if (!commandId) throw new Error('No commandId returned from backend.');
-      
       // 2. Poll for job status
       let status = '';
       let glbPresignedUrl = '';
-      let usdzPresignedUrl = '';
       for (let i = 0; i < 60; i++) { // up to 5 min
         const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
           method: 'POST',
@@ -256,20 +343,12 @@ export function GenerateAssetSection() {
         const checkData = await checkRes.json();
         status = checkData.status;
         glbPresignedUrl = checkData['glb_presigned_url'] || '';
-        usdzPresignedUrl = checkData['usdz_presigned_url'] || '';
-        
-        if (status === 'Success' && glbPresignedUrl && usdzPresignedUrl) break;
+        if (status === 'Success' && glbPresignedUrl) break;
         if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
         await new Promise(res => setTimeout(res, 5000)); // wait 5s
       }
-      
-      if (status !== 'Success' || !glbPresignedUrl || !usdzPresignedUrl) {
-        throw new Error('3D model not generated or URLs missing.');
-      }
-
-      // Use the presigned URLs directly
+      if (status !== 'Success' || !glbPresignedUrl) throw new Error('3D model not generated or URL missing.');
       setGeneratedModel(glbPresignedUrl);
-      setFormData(prev => ({ ...prev, iosModelPath: usdzPresignedUrl }));
     } catch (err: any) {
       setGenerate3DError(err.message || '3D model generation failed.');
     } finally {
@@ -495,7 +574,6 @@ export function GenerateAssetSection() {
               ) : generatedModel ? (
                 <ModelViewer
                   src={generatedModel}
-                  iosSrc={formData.iosModelPath || generatedModel.replace(".glb", ".usdz")}
                   alt="Generated 3D model"
                 />
               ) : (
