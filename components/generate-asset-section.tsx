@@ -197,18 +197,6 @@ export function GenerateAssetSection() {
     }
   };
 
-  // Helper to extract S3 URI from presigned URL
-  function presignedUrlToS3Uri(url: string): string | null {
-    // Example: https://bucket.s3.amazonaws.com/key.png?... => s3://bucket/key.png
-    try {
-      const match = url.match(/^https:\/\/(.+?)\.s3\.amazonaws\.com\/(.+?)(\?|$)/);
-      if (!match) return null;
-      return `s3://${match[1]}/${match[2]}`;
-    } catch {
-      return null;
-    }
-  }
-
   const handleGenerate3DModel = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating3D(true);
@@ -216,21 +204,22 @@ export function GenerateAssetSection() {
     setGeneratedModel(null);
     try {
       if (!generatedImage) throw new Error('No generated image to use for 3D model.');
-      const s3uri = presignedUrlToS3Uri(generatedImage);
-      if (!s3uri) throw new Error('Could not extract S3 URI from image URL.');
+      
       // 1. Start 3D job
       const createRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/create-3d-job', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ s3uri })
+        body: JSON.stringify({ s3uri: generatedImage })
       });
       if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
       const createData = await createRes.json();
       const commandId = createData.commandId || createData['commandId'] || (typeof createData === 'string' && createData.match(/commandId: (.+)/)?.[1]);
       if (!commandId) throw new Error('No commandId returned from backend.');
+      
       // 2. Poll for job status
       let status = '';
       let glbPresignedUrl = '';
+      let usdzPresignedUrl = '';
       for (let i = 0; i < 60; i++) { // up to 5 min
         const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
           method: 'POST',
@@ -240,12 +229,20 @@ export function GenerateAssetSection() {
         const checkData = await checkRes.json();
         status = checkData.status;
         glbPresignedUrl = checkData['glb_presigned_url'] || '';
-        if (status === 'Success' && glbPresignedUrl) break;
+        usdzPresignedUrl = checkData['usdz_presigned_url'] || '';
+        
+        if (status === 'Success' && glbPresignedUrl && usdzPresignedUrl) break;
         if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
         await new Promise(res => setTimeout(res, 5000)); // wait 5s
       }
-      if (status !== 'Success' || !glbPresignedUrl) throw new Error('3D model not generated or URL missing.');
+      
+      if (status !== 'Success' || !glbPresignedUrl || !usdzPresignedUrl) {
+        throw new Error('3D model not generated or URLs missing.');
+      }
+
+      // Use the presigned URLs directly
       setGeneratedModel(glbPresignedUrl);
+      setFormData(prev => ({ ...prev, iosModelPath: usdzPresignedUrl }));
     } catch (err: any) {
       setGenerate3DError(err.message || '3D model generation failed.');
     } finally {
@@ -309,10 +306,10 @@ export function GenerateAssetSection() {
             <span className="font-semibold">Describe your asset</span> and click <span className="font-semibold">Generate Image</span>. If you like the result, click <span className="font-semibold">Generate 3D Model</span>.
           </p>
         </div>
-        <Tabs defaultValue="text">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4 w-full flex flex-row">
             <TabsTrigger value="text" className="w-1/2">Text to 3D</TabsTrigger>
-            <TabsTrigger value="image" disabled className="w-1/2">Image to 3D</TabsTrigger>
+            <TabsTrigger value="image" className="w-1/2">Image to 3D</TabsTrigger>
           </TabsList>
           <TabsContent value="text">
             <form className="flex flex-col gap-4">
@@ -397,6 +394,34 @@ export function GenerateAssetSection() {
               {generate3DError && <p className="text-red-500 mt-2">{generate3DError}</p>}
             </form>
           </TabsContent>
+          <TabsContent value="image">
+            <form className="flex flex-col gap-4">
+              <Label htmlFor="image-upload">Upload Image</Label>
+              <Input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="mb-2"
+              />
+              <Button type="button" className="w-full mb-2" onClick={handleCameraCapture}>
+                Open Camera
+              </Button>
+              {imagePreview && (
+                <div className="w-full flex justify-center mb-2">
+                  <img src={imagePreview} alt="Preview" className="max-h-48 rounded-md object-contain" />
+                </div>
+              )}
+              <Button
+                type="button"
+                className="w-full mt-2 py-3 text-base"
+                onClick={/* TODO: implement image-to-3d handler */() => {}}
+                disabled={!selectedImage}
+              >
+                Generate 3D Model
+              </Button>
+            </form>
+          </TabsContent>
         </Tabs>
       </div>
       {/* Right: Previews */}
@@ -444,7 +469,7 @@ export function GenerateAssetSection() {
               ) : generatedModel ? (
                 <ModelViewer
                   src={generatedModel}
-                  iosSrc={generatedModel.replace(".glb", ".usdz")}
+                  iosSrc={formData.iosModelPath || generatedModel.replace(".glb", ".usdz")}
                   alt="Generated 3D model"
                 />
               ) : (
