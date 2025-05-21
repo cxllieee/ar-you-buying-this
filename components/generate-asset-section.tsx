@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Upload, ImageIcon, MessageSquare, Camera, Wand2, Box, ArrowRight } from "lucide-react"
+import { Loader2, Upload, ImageIcon, MessageSquare, Camera, Wand2, Box, ArrowRight, Sparkles } from "lucide-react"
 import { ModelViewer } from "@/components/model-viewer"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,33 @@ interface AssetData {
   material: string
   color: string
   isCustomizable: boolean
+}
+
+// Techy, playful waiting/progress component
+type TechyWaitingProps = {
+  label: string;
+  percent: number;
+  color?: string;
+  icon?: React.ReactNode;
+};
+
+function TechyWaiting({ label, percent, color = "from-purple-400 via-blue-500 to-pink-400", icon = <Sparkles className="h-10 w-10 text-white drop-shadow-lg animate-pulse" /> }: TechyWaitingProps) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full py-6 animate-fade-in">
+      <div className={`mb-4 w-20 h-20 flex items-center justify-center rounded-full bg-gradient-to-tr ${color} shadow-xl animate-spin-slow`}>
+        {icon}
+      </div>
+      <div className="font-bold text-lg mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-500 to-pink-400 drop-shadow">{label}</div>
+      <div className="w-full max-w-xs h-3 rounded-full bg-gradient-to-r from-slate-200 via-slate-300 to-slate-100 overflow-hidden mb-2">
+        <div className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-700`} style={{ width: `${percent}%` }} />
+      </div>
+      {/* <div className="text-xs text-gray-500">{percent}% complete</div> */}
+      <div className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-100 via-blue-100 to-pink-100 border border-purple-200 rounded-lg text-purple-700 flex items-center gap-2 shadow">
+        <Sparkles className="h-4 w-4 text-purple-400 animate-pulse" />
+        <span>Hang tight! Our AI is working its magic.</span>
+      </div>
+    </div>
+  )
 }
 
 export function GenerateAssetSection() {
@@ -261,8 +288,8 @@ export function GenerateAssetSection() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
               {/* Step 1 */}
               <div className="flex flex-col items-center text-center flex-1 px-2">
-                <div className="bg-slate-200 rounded-full p-2 md:p-3 mb-1 md:mb-2">
-                  <Wand2 className="h-7 w-7 md:h-8 md:w-8 text-slate-500" />
+                <div className="bg-gradient-to-tr from-purple-400 to-pink-400 rounded-full p-2 md:p-3 mb-1 md:mb-2 shadow-lg">
+                  <Wand2 className="h-7 w-7 md:h-8 md:w-8 text-white" />
                 </div>
                 <div className="font-semibold text-base md:text-lg mb-0.5">1. Generate Image</div>
                 <div className="text-gray-500 text-xs md:text-sm">Describe what you want. Our AI creates an image.</div>
@@ -273,8 +300,8 @@ export function GenerateAssetSection() {
               </div>
               {/* Step 2 */}
               <div className="flex flex-col items-center text-center flex-1 px-2">
-                <div className="bg-slate-200 rounded-full p-2 md:p-3 mb-1 md:mb-2">
-                  <ImageIcon className="h-7 w-7 md:h-8 md:w-8 text-slate-500" />
+                <div className="bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full p-2 md:p-3 mb-1 md:mb-2 shadow-lg">
+                  <ImageIcon className="h-7 w-7 md:h-8 md:w-8 text-white" />
                 </div>
                 <div className="font-semibold text-base md:text-lg mb-0.5">2. Review Image</div>
                 <div className="text-gray-500 text-xs md:text-sm">Check the result. Regenerate if needed.</div>
@@ -285,8 +312,8 @@ export function GenerateAssetSection() {
               </div>
               {/* Step 3 */}
               <div className="flex flex-col items-center text-center flex-1 px-2">
-                <div className="bg-slate-200 rounded-full p-2 md:p-3 mb-1 md:mb-2">
-                  <Box className="h-7 w-7 md:h-8 md:w-8 text-slate-500" />
+                <div className="bg-gradient-to-tr from-green-400 to-emerald-400 rounded-full p-2 md:p-3 mb-1 md:mb-2 shadow-lg">
+                  <Box className="h-7 w-7 md:h-8 md:w-8 text-white" />
                 </div>
                 <div className="font-semibold text-base md:text-lg mb-0.5">3. Create 3D Model</div>
                 <div className="text-gray-500 text-xs md:text-sm">Turn your image into a 3D asset.</div>
@@ -437,8 +464,10 @@ export function GenerateAssetSection() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="w-full h-[220px] bg-slate-100 rounded-md overflow-hidden flex items-center justify-center">
-              {generatedImage ? (
+            <div className="w-full h-[220px] bg-gradient-to-br from-slate-100 via-blue-50 to-pink-50 rounded-md overflow-hidden flex items-center justify-center">
+              {isGeneratingImage ? (
+                <TechyWaiting label="Generating Image..." percent={60} color="from-pink-400 via-blue-400 to-purple-400" />
+              ) : generatedImage ? (
                 <Image src={generatedImage} alt="Generated preview" width={256} height={256} className="object-contain" />
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
@@ -460,12 +489,9 @@ export function GenerateAssetSection() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="w-full h-[220px] bg-slate-100 rounded-md overflow-hidden">
+            <div className="w-full h-[220px] bg-gradient-to-br from-slate-100 via-blue-50 to-pink-50 rounded-md overflow-hidden">
               {isGenerating3D ? (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                  <Loader2 className="h-12 w-12 mb-4 animate-spin" />
-                  <p>Generating 3D model...</p>
-                </div>
+                <TechyWaiting label="Generating 3D Model..." percent={40} color="from-blue-400 via-purple-400 to-pink-400" icon={<Box className="h-10 w-10 text-white drop-shadow-lg animate-bounce" />} />
               ) : generatedModel ? (
                 <ModelViewer
                   src={generatedModel}
