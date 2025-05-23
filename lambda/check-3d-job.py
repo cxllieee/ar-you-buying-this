@@ -1,20 +1,20 @@
 import boto3
 import json
+import time
 
 def lambda_handler(event, context):
     # Initialize AWS clients
     ssm = boto3.client('ssm')
     dynamodb = boto3.resource('dynamodb')
-    print(event)
     body = json.loads(event['body'])
     
     try:
         # Get command ID from event
-        command_id = body['commandId']
+        commandId = body['commandId']
         
         # Get command status from Systems Manager
         response = ssm.get_command_invocation(
-            CommandId=command_id,
+            CommandId=commandId,
             InstanceId="i-0909bb5ffeda3d36e" # ec2-triposr
         )
         
@@ -27,21 +27,65 @@ def lambda_handler(event, context):
             table = dynamodb.Table('run-command-output')
             ddb_response = table.get_item(
                 Key={
-                    'commandId': command_id
+                    'commandId': commandId
                 }
             )
             # Return S3 URI if found
             if 'Item' in ddb_response:
-                glb_s3_uri = ddb_response['Item']['generated-3d-assets-uri']
+                glb_s3_uri = ddb_response['Item']['glb_s3_uri']
+                usdz_s3_uri = glb_s3_uri.replace('.glb', '.usdz')
+                print(glb_s3_uri)
+                print(usdz_s3_uri)
+
+                # Trigger SSM Run Command to convert GLB to USDZ
+                ssm_client = boto3.client('ssm')
+                ssm_response = ssm_client.send_command(
+                    InstanceIds=['i-0768ea74afcec9d0a'],  #ec2-convert-glb-to-usdz
+                    DocumentName='AWS-RunShellScript',
+                    Parameters={
+                        'commands': [
+                            'cd /home/ssm-user',
+                            '. /home/ssm-user/.bash_profile',
+                            'cd ConvertGLB',
+                            'pyenv local myenv',
+                            f'aws s3 cp {glb_s3_uri} asset.glb',
+                            'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
+                            'python3 run.py',
+                            f'aws s3 cp asset.usdz {usdz_s3_uri}'
+                        ]
+                    }
+                )
+                time.sleep(3) # Wait 3s to ensure upload to S3 is complete
+
+                # Add usdz_s3_uri to DynamoDB
+                response = table.update_item(
+                    Key={
+                        'commandId': commandId
+                    },
+                    UpdateExpression='SET usdz_s3_uri = :usdz',
+                    ExpressionAttributeValues={
+                        ':usdz': usdz_s3_uri
+                    },
+                    ReturnValues="UPDATED_NEW"
+                )
+
                 # Generate presigned URL
                 s3 = boto3.client('s3')
                 bucket = 'sg-summit-generated-assets-853138055027'
-                key = glb_s3_uri.replace(f's3://{bucket}/', '')
-                presigned_url = s3.generate_presigned_url(
+                glb_s3_key = glb_s3_uri.replace(f's3://{bucket}/', '')
+                glb_presigned_url = s3.generate_presigned_url(
                     'get_object',
-                    Params={'Bucket': bucket, 'Key': key},
+                    Params={'Bucket': bucket, 'Key': glb_s3_key},
                     ExpiresIn=3600
                 )
+
+                usdz_s3_key = usdz_s3_uri.replace(f's3://{bucket}/', '')
+                usdz_presigned_url = s3.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': bucket, 'Key': usdz_s3_key},
+                    ExpiresIn=3600
+                )
+
                 return {
                     'statusCode': 200,
                     'headers': {
@@ -52,7 +96,9 @@ def lambda_handler(event, context):
                     'body': json.dumps({
                         'status': 'Success',
                         'glb_s3_uri': glb_s3_uri,
-                        'glb_presigned_url': presigned_url
+                        'glb_presigned_url': glb_presigned_url,
+                        # 'usdz_s3_uri': usdz_s3_uri,
+                        # 'usdz_presigned_url': usdz_presigned_url
                     })
                 }
             else:
@@ -64,7 +110,7 @@ def lambda_handler(event, context):
                         'Access-Control-Allow-Methods': 'POST,OPTIONS'
                     },
                     'body': json.dumps({
-                        'status': 'Success',
+                        'status': 'Error',
                         'message': 'S3 URI not found for command ID'
                     })
                 }
@@ -78,7 +124,8 @@ def lambda_handler(event, context):
                     'Access-Control-Allow-Methods': 'POST,OPTIONS'
                 },
                 'body': json.dumps({
-                    'status': command_status
+                    'status': command_status,
+                    'message': "Run Command ID found. But returns job status other than Success"
                 })
             }
             
@@ -94,3 +141,4 @@ def lambda_handler(event, context):
                 'error': str(e)
             })
         }
+

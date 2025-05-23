@@ -53,3 +53,7 @@ lambda/*.local
 lambda/*_test.py
 lambda/*.log
 lambda/*.tmp
+
+# Ignore lambda and public folders
+public/
+lambda/

@@ -224,83 +224,6 @@ export function GenerateAssetSection() {
     }
   };
 
-  // const handleGenerateImage = async () => {
-  //   setIsGeneratingImage(true);
-  //   setImageError(null);
-  //   setGeneratedImage(null);
-  //   try {
-  //     const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ prompt: imagePrompt })
-  //     });
-  //     if (!response.ok) throw new Error("Failed to generate image");
-  //     const data = await response.json();
-  //     setGeneratedImage(data.imageUrl);
-  //     if (!formData.name) {
-  //       const match = data.imageUrl.match(/generated-images\/(.*?)\.png/);
-  //       if (match && match[1]) {
-  //         setFormData({ ...formData, name: match[1] });
-  //       }
-  //     }
-  //   } catch (err) {
-  //     setImageError("Image generation failed. Try again.");
-  //   } finally {
-  //     setIsGeneratingImage(false);
-  //   }
-  // };
-
-  // const handleGenerate3DModel = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setIsGenerating3D(true);
-  //   setGenerate3DError(null);
-  //   setGeneratedModel(null);
-  //   try {
-  //     if (!generatedImage) throw new Error('No generated image to use for 3D model.');
-      
-  //     // 1. Start 3D job
-  //     const createRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/create-3d-job', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ s3uri: generatedImage })
-  //     });
-  //     if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
-  //     const createData = await createRes.json();
-  //     const commandId = createData.commandId || createData['commandId'] || (typeof createData === 'string' && createData.match(/commandId: (.+)/)?.[1]);
-  //     console.log('Received commandId from create-3d-job:', commandId);
-  //     if (!commandId) throw new Error('No commandId returned from backend.');
-      
-  //     // 2. Poll for job status
-  //     let status = '';
-  //     let glbPresignedUrl = '';
-  //     for (let i = 0; i < 60; i++) { // up to 5 min
-  //       console.log('Polling check-3d-job with commandId:', commandId);
-  //       const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
-  //         method: 'POST',
-  //         headers: { 'Content-Type': 'application/json' },
-  //         body: JSON.stringify({ commandId })
-  //       });
-  //       const checkData = await checkRes.json();
-  //       status = checkData.status;
-  //       glbPresignedUrl = checkData['glb_presigned_url'] || '';
-  //       if (status === 'Success' && glbPresignedUrl) break;
-  //       if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
-  //       await new Promise(res => setTimeout(res, 5000)); // wait 5s
-  //     }
-      
-  //     if (status !== 'Success' || !glbPresignedUrl) {
-  //       throw new Error('3D model not generated or URL missing.');
-  //     }
-
-  //     // Use the presigned URL directly
-  //     setGeneratedModel(glbPresignedUrl);
-  //   } catch (err: any) {
-  //     setGenerate3DError(err.message || '3D model generation failed.');
-  //   } finally {
-  //     setIsGenerating3D(false);
-  //   }
-  // };
-
   function presignedUrlToS3Uri(url: string): string | null {
     // Example: https://bucket.s3.amazonaws.com/key.png?... => s3://bucket/key.png
     try {
@@ -424,7 +347,7 @@ export function GenerateAssetSection() {
               <Label htmlFor="image-prompt">Description</Label>
               <Textarea
                 id="image-prompt"
-                placeholder="Describe the 3D model in detail"
+                placeholder="e.g., A modern black office chair with mesh back and gold legs"
                 className="mb-2"
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
@@ -462,21 +385,6 @@ export function GenerateAssetSection() {
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 required
               />
-              <Label htmlFor="asset-price">Price (optional)</Label>
-              <Input
-                id="asset-price"
-                type="number"
-                placeholder="Enter price"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              />
-              <Label htmlFor="asset-dimensions">Dimensions (optional)</Label>
-              <Input
-                id="asset-dimensions"
-                placeholder='24"W x 24"D x 40"H'
-                value={formData.dimensions}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, dimensions: e.target.value })}
-              />
               <Button
                 type="button"
                 className="w-full mt-2 py-3 text-base"
@@ -502,30 +410,98 @@ export function GenerateAssetSection() {
           </TabsContent>
           <TabsContent value="image">
             <form className="flex flex-col gap-4">
-              <Label htmlFor="image-upload">Upload Image</Label>
+              <Label>Reference Image</Label>
+              <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center gap-2">
+                {imagePreview ? (
+                  <div className="relative w-full aspect-square">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain rounded-md"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      type="button"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Drag and drop an image, or click to browse
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Upload Image
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={handleCameraCapture}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Take Photo
+                      </Button>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </>
+                )}
+              </div>
+              <Label htmlFor="asset-name-image">Asset Name</Label>
               <Input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="mb-2"
+                id="asset-name-image"
+                placeholder="Enter asset name"
+                value={formData.name}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
               />
-              <Button type="button" className="w-full mb-2" onClick={handleCameraCapture}>
-                Open Camera
-              </Button>
-              {imagePreview && (
-                <div className="w-full flex justify-center mb-2">
-                  <img src={imagePreview} alt="Preview" className="max-h-48 rounded-md object-contain" />
-                </div>
-              )}
+              <Label htmlFor="customisation-prompt">Customisation Prompt</Label>
+              <Textarea
+                id="customisation-prompt"
+                placeholder="e.g., Make the chair legs gold, add a logo on the backrest"
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+              />
               <Button
                 type="button"
                 className="w-full mt-2 py-3 text-base"
-                onClick={/* TODO: implement image-to-3d handler */() => {}}
+                onClick={handleGenerateImage}
                 disabled={!selectedImage}
               >
-                Generate 3D Model
+                {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Generate Image
               </Button>
+              {generatedImage && (
+                <Button
+                  type="button"
+                  className="w-full mt-2 py-3 text-base"
+                  disabled={isGenerating3D}
+                  onClick={handleGenerate3DModel}
+                >
+                  {isGenerating3D ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {isGenerating3D ? 'Generating 3D Model...' : 'Generate 3D Model'}
+                </Button>
+              )}
+              {generate3DError && <p className="text-red-500 mt-2">{generate3DError}</p>}
             </form>
           </TabsContent>
         </Tabs>

@@ -10,9 +10,10 @@ import { ModelViewer } from "@/components/model-viewer"
 
 interface ProductCardProps {
   product: Product
+  onCustomize?: (product: Product) => void
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onCustomize }: ProductCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
   // Use a default poster if the product's poster path is not available
@@ -71,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
             variant="outline"
             size="sm"
             className="flex-1"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-customize-modal", { detail: product }))}
+            onClick={() => onCustomize ? onCustomize(product) : window.dispatchEvent(new CustomEvent("open-customize-modal", { detail: product }))}
           >
             <Cube className="h-4 w-4 mr-2" />
             Customize

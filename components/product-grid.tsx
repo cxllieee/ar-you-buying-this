@@ -5,7 +5,11 @@ import { ProductCard } from "@/components/product-card"
 import { useProductStore } from "@/lib/store"
 import type { Product } from "@/lib/types"
 
-export function ProductGrid() {
+interface ProductGridProps {
+  onCustomize?: (product: any) => void;
+}
+
+export function ProductGrid({ onCustomize }: ProductGridProps) {
   const { searchQuery, categoryFilter } = useProductStore()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -102,7 +106,7 @@ export function ProductGrid() {
           {filteredProducts
             .filter(product => product.modelPath)
             .map(product => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} onCustomize={onCustomize} />
             ))}
         </div>
       )}

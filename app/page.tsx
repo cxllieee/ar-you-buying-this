@@ -18,6 +18,8 @@ const Lottie = dynamic(() => import("lottie-react"), { ssr: false })
 export default function Home() {
   const [showDemo, setShowDemo] = useState(false)
   const [activeTab, setActiveTab] = useState("browse")
+  const [generateTab, setGenerateTab] = useState("text")
+  const [customizeAsset, setCustomizeAsset] = useState(null)
 
   if (!showDemo) {
     return (
@@ -86,11 +88,21 @@ export default function Home() {
             </TabsList>
 
             <TabsContent value="browse" className="mt-0">
-              <ProductGrid />
+              <ProductGrid onCustomize={asset => {
+                setShowDemo(true)
+                setActiveTab("generate")
+                setGenerateTab("image")
+                setCustomizeAsset(asset)
+              }} />
             </TabsContent>
 
             <TabsContent value="generate" className="mt-0">
-              <GenerateAssetSection />
+              <GenerateAssetSection
+                initialTab={generateTab}
+                preloadedAsset={customizeAsset}
+                onTabChange={setGenerateTab}
+                onClearCustomize={() => setCustomizeAsset(null)}
+              />
             </TabsContent>
           </Tabs>
         </div>
