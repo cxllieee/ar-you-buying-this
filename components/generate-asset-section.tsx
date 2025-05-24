@@ -229,6 +229,56 @@ export function GenerateAssetSection() {
     }
   };
 
+  const handleGenerateTextToImage = async () => {
+    setIsGeneratingImage(true);
+    setImageError(null);
+    setGeneratedImage(null);
+    try {
+      const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: imagePrompt })
+      });
+      if (!response.ok) throw new Error("Failed to generate image");
+      const data = await response.json();
+      setGeneratedImage(data.imageUrl);
+      if (!formData.name) {
+        const match = data.imageUrl.match(/generated-images\/(.*?)\.png/);
+        if (match && match[1]) {
+          setFormData({ ...formData, name: match[1] });
+        }
+      }
+    } catch (err) {
+      setImageError("Image generation failed. Try again.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+  
+  //   if (!imagePrompt) return;
+  //   setIsGeneratingImage(true);
+  //   setImageError(null);
+  //   setGeneratedImage(null);
+  //   try {
+  //     const body = {
+  //       prompt: imagePrompt,
+  //       assetName: formData.name,
+  //     };
+  //     const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(body),
+  //     });
+  //     if (!response.ok) throw new Error('Failed to generate image');
+  //     const data = await response.json();
+  //     setGeneratedImage(data.imageUrl || data.presignedUrl);
+  //   } catch (err) {
+  //     setImageError('Image generation failed. Try again.');
+  //   } finally {
+  //     setIsGeneratingImage(false);
+  //   }
+  // };
+
   function presignedUrlToS3Uri(url: string): string | null {
     // Example: https://bucket.s3.amazonaws.com/key.png?... => s3://bucket/key.png
     try {
@@ -414,7 +464,7 @@ export function GenerateAssetSection() {
               <Button
                 type="button"
                 className="w-full mt-2 py-3 text-base"
-                onClick={handleGenerateImage}
+                onClick={handleGenerateTextToImage}
                 disabled={isGeneratingImage || !imagePrompt}
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
@@ -515,14 +565,6 @@ export function GenerateAssetSection() {
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Generate Image
-              </Button>
-              <Button
-                type="button"
-                className="w-full mt-2 py-3 text-base"
-                onClick={handleSaveToS3}
-                disabled={!selectedImage}
-              >
-                Save to S3
               </Button>
               {generatedImage && (
                 <Button
