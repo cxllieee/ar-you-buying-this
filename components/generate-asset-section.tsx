@@ -53,10 +53,19 @@ function TechyWaiting({ label, percent, color = "from-purple-400 via-blue-500 to
   )
 }
 
-export function GenerateAssetSection() {
-  const [activeTab, setActiveTab] = useState("text")
+// Add prop type for initialTab
+interface GenerateAssetSectionProps {
+  initialTab?: string;
+  preloadedAsset?: any;
+  onTabChange?: (tab: string) => void;
+  onClearCustomize?: () => void;
+}
+
+// Update function signature to accept props
+export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTabChange, onClearCustomize }: GenerateAssetSectionProps) {
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedModel, setGeneratedModel] = useState<string | null>(null)
+  const [generatedModel, setGeneratedModel] = useState<{ glb: string; usdz: string } | null>(null)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -307,11 +316,19 @@ export function GenerateAssetSection() {
       });
       if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
       const createData = await createRes.json();
-      const commandId = createData.commandId || createData['commandId'] || (typeof createData === 'string' && createData.match(/commandId: (.+)/)?.[1]);
+      let commandId = null;
+      if (createData.results && typeof createData.results === 'object') {
+        // Take the first value from the results object
+        const values = Object.values(createData.results);
+        if (values.length > 0) {
+          commandId = values[0];
+        }
+      }
       if (!commandId) throw new Error('No commandId returned from backend.');
       // 2. Poll for job status
       let status = '';
       let glbPresignedUrl = '';
+      let usdzPresignedUrl = '';
       for (let i = 0; i < 60; i++) { // up to 5 min
         const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
           method: 'POST',
@@ -321,12 +338,13 @@ export function GenerateAssetSection() {
         const checkData = await checkRes.json();
         status = checkData.status;
         glbPresignedUrl = checkData['glb_presigned_url'] || '';
-        if (status === 'Success' && glbPresignedUrl) break;
+        usdzPresignedUrl = checkData['usdz_presigned_url'] || '';
+        if (status === 'Success' && (glbPresignedUrl || usdzPresignedUrl)) break;
         if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
         await new Promise(res => setTimeout(res, 5000)); // wait 5s
       }
-      if (status !== 'Success' || !glbPresignedUrl) throw new Error('3D model not generated or URL missing.');
-      setGeneratedModel(glbPresignedUrl);
+      if (status !== 'Success' || (!glbPresignedUrl && !usdzPresignedUrl)) throw new Error('3D model not generated or URL missing.');
+      setGeneratedModel({ glb: glbPresignedUrl, usdz: usdzPresignedUrl });
     } catch (err: any) {
       setGenerate3DError(err.message || '3D model generation failed.');
     } finally {
@@ -423,44 +441,12 @@ export function GenerateAssetSection() {
               <Label htmlFor="image-prompt">Description</Label>
               <Textarea
                 id="image-prompt"
-                placeholder="e.g., A modern black office chair with mesh back and gold legs"
+                placeholder="e.g., A modern black office chair with mesh back and gold legs. Include material and color in your description for best results."
                 className="mb-2"
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
               />
               {imageError && <p className="text-red-500 mb-2">{imageError}</p>}
-              <Label htmlFor="asset-category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
-                required
-              >
-                <SelectTrigger id="asset-category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="furniture">Furniture</SelectItem>
-                  <SelectItem value="office">Office</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="industrial">Industrial</SelectItem>
-                </SelectContent>
-              </Select>
-              <Label htmlFor="asset-material">Material</Label>
-              <Input
-                id="asset-material"
-                placeholder="e.g., Mesh & Foam"
-                value={formData.material}
-                onChange={(e) => setFormData({ ...formData, material: e.target.value })}
-                required
-              />
-              <Label htmlFor="asset-color">Color</Label>
-              <Input
-                id="asset-color"
-                placeholder="e.g., Black"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                required
-              />
               <Button
                 type="button"
                 className="w-full mt-2 py-3 text-base"
@@ -553,7 +539,7 @@ export function GenerateAssetSection() {
               <Label htmlFor="customisation-prompt">Customisation Prompt</Label>
               <Textarea
                 id="customisation-prompt"
-                placeholder="e.g., Make the chair legs gold, add a logo on the backrest"
+                placeholder="e.g., Make the chair legs gold, add a logo on the backrest. Include material and color in your description for best results."
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
               />
@@ -625,7 +611,8 @@ export function GenerateAssetSection() {
                 <TechyWaiting label="Generating 3D Model..." percent={40} color="from-blue-400 via-purple-400 to-pink-400" icon={<Box className="h-10 w-10 text-white drop-shadow-lg animate-bounce" />} />
               ) : generatedModel ? (
                 <ModelViewer
-                  src={generatedModel}
+                  src={generatedModel.glb || ''}
+                  iosSrc={generatedModel.usdz || ''}
                   alt="Generated 3D model"
                 />
               ) : (

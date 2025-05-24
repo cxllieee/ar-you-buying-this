@@ -50,6 +50,9 @@ export default function Home() {
               <li>Preview in AR</li>
               <li>Customize as you like</li>
             </ul>
+            <div className="w-full flex flex-col items-center mt-4">
+              <span className="text-xs text-gray-500 text-center">Contributors: Callie Cheong (@calliecg), Lester Sim (@lestesim), Jennifer Lin (@awsjlin), Bryan Chen (@bryancwh), Yong Xuan (@yxchua)</span>
+            </div>
           </section>
           <a
             href="https://github.com/cxllieee/ar-you-buying-this"
@@ -107,6 +110,9 @@ export default function Home() {
           </Tabs>
         </div>
       </main>
+      <div className="w-full flex flex-col items-center mb-2">
+        <span className="text-xs text-gray-500 text-center">Contributors: Callie Cheong (@calliecg), Lester Sim (@lestesim), Jennifer Lin (@awsjlin), Bryan Chen (@bryancwh), Yong Xuan (@yxchua)</span>
+      </div>
       <Footer />
       <CustomizeModal />
       <GenerateModal />
