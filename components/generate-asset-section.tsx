@@ -199,26 +199,31 @@ export function GenerateAssetSection() {
   }
 
   const handleGenerateImage = async () => {
+    if (!selectedImage || !formData.description) return;
     setIsGeneratingImage(true);
     setImageError(null);
     setGeneratedImage(null);
     try {
-      const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt })
+      const requestData = new FormData();
+      requestData.append('image', selectedImage);
+      requestData.append('prompt', formData.description);
+      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/image-to-image', {
+        method: 'POST',
+        body: requestData
       });
-      if (!response.ok) throw new Error("Failed to generate image");
+      if (!response.ok) throw new Error('Failed to generate image');
       const data = await response.json();
-      setGeneratedImage(data.imageUrl);
-      if (!formData.name) {
-        const match = data.imageUrl.match(/generated-images\/(.*?)\.png/);
+      setGeneratedImage(data.imageUrl || data.presignedUrl);
+      // Optionally update asset name from imageUrl if needed
+      if (!formData.name && (data.imageUrl || data.presignedUrl)) {
+        const url = data.imageUrl || data.presignedUrl;
+        const match = url.match(/generated-images\/(.*?)\.(png|jpg|jpeg)/);
         if (match && match[1]) {
           setFormData({ ...formData, name: match[1] });
         }
       }
     } catch (err) {
-      setImageError("Image generation failed. Try again.");
+      setImageError('Image generation failed. Try again.');
     } finally {
       setIsGeneratingImage(false);
     }
@@ -276,6 +281,27 @@ export function GenerateAssetSection() {
       setGenerate3DError(err.message || '3D model generation failed.');
     } finally {
       setIsGenerating3D(false);
+    }
+  };
+
+  const handleSaveToS3 = async () => {
+    if (!selectedImage) return;
+    const formDataToSend = new FormData();
+    formDataToSend.append('image', selectedImage);
+    formDataToSend.append('name', formData.name || 'uploaded-image');
+    try {
+      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/upload-image', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      const data = await response.json();
+      if (data.s3uri) {
+        alert(`Saved to: ${data.s3uri}`);
+      } else {
+        alert('Failed to save image to S3.');
+      }
+    } catch (err) {
+      alert('Error saving image to S3.');
     }
   };
 
@@ -485,10 +511,18 @@ export function GenerateAssetSection() {
                 type="button"
                 className="w-full mt-2 py-3 text-base"
                 onClick={handleGenerateImage}
-                disabled={!selectedImage}
+                disabled={!selectedImage || !formData.description}
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Generate Image
+              </Button>
+              <Button
+                type="button"
+                className="w-full mt-2 py-3 text-base"
+                onClick={handleSaveToS3}
+                disabled={!selectedImage}
+              >
+                Save to S3
               </Button>
               {generatedImage && (
                 <Button
