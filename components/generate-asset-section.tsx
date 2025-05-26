@@ -83,8 +83,19 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [isGenerating3D, setIsGenerating3D] = useState(false);
-  const [generate3DError, setGenerate3DError] = useState<string | null>(null);
+  const [modelJobs, setModelJobs] = useState<{ [key: string]: string }>({});
+  const [generatedModels, setGeneratedModels] = useState<{ [key: string]: { glb: string; usdz: string } | null }>({
+    tripoSR: null,
+    "step1x-3d": null,
+  });
+  const [isGenerating3D, setIsGenerating3D] = useState<{ [key: string]: boolean }>({
+    tripoSR: false,
+    "step1x-3d": false,
+  });
+  const [generate3DError, setGenerate3DError] = useState<{ [key: string]: string | null }>({
+    tripoSR: null,
+    "step1x-3d": null,
+  });
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -301,9 +312,8 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
 
   const handleGenerate3DModel = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsGenerating3D(true);
-    setGenerate3DError(null);
-    setGeneratedModel(null);
+    setIsGenerating3D({ tripoSR: true, "step1x-3d": true });
+    setGenerate3DError({ tripoSR: null, "step1x-3d": null });
     try {
       if (!generatedImage) throw new Error('No generated image to use for 3D model.');
       const s3uri = presignedUrlToS3Uri(generatedImage);
@@ -316,39 +326,16 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
       });
       if (!createRes.ok) throw new Error('Failed to start 3D generation job.');
       const createData = await createRes.json();
-      let commandId = null;
-      if (createData.results && typeof createData.results === 'object') {
-        // Take the first value from the results object
-        const values = Object.values(createData.results);
-        if (values.length > 0) {
-          commandId = values[0];
-        }
-      }
-      if (!commandId) throw new Error('No commandId returned from backend.');
-      // 2. Poll for job status
-      let status = '';
-      let glbPresignedUrl = '';
-      let usdzPresignedUrl = '';
-      for (let i = 0; i < 60; i++) { // up to 5 min
-        const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ commandId })
+      if (createData.results) {
+        setModelJobs(createData.results);
+        // Poll both jobs
+        Object.entries(createData.results).forEach(([modeName, commandId]) => {
+          poll3DJob(commandId as string, modeName);
         });
-        const checkData = await checkRes.json();
-        status = checkData.status;
-        glbPresignedUrl = checkData['glb_presigned_url'] || '';
-        usdzPresignedUrl = checkData['usdz_presigned_url'] || '';
-        if (status === 'Success' && (glbPresignedUrl || usdzPresignedUrl)) break;
-        if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
-        await new Promise(res => setTimeout(res, 5000)); // wait 5s
       }
-      if (status !== 'Success' || (!glbPresignedUrl && !usdzPresignedUrl)) throw new Error('3D model not generated or URL missing.');
-      setGeneratedModel({ glb: glbPresignedUrl, usdz: usdzPresignedUrl });
+      if (!Object.keys(createData.results).length) throw new Error('No commandIds returned from backend.');
     } catch (err: any) {
-      setGenerate3DError(err.message || '3D model generation failed.');
-    } finally {
-      setIsGenerating3D(false);
+      setGenerate3DError(prev => ({ ...prev, tripoSR: err.message || '3D model generation failed.', "step1x-3d": err.message || '3D model generation failed.' }));
     }
   };
 
@@ -370,6 +357,39 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
       }
     } catch (err) {
       alert('Error saving image to S3.');
+    }
+  };
+
+  const poll3DJob = async (commandId: string, modeName: string) => {
+    setIsGenerating3D(prev => ({ ...prev, [modeName]: true }));
+    setGenerate3DError(prev => ({ ...prev, [modeName]: null }));
+    try {
+      let status = '';
+      let glbPresignedUrl = '';
+      let usdzPresignedUrl = '';
+      for (let i = 0; i < 60; i++) {
+        const checkRes = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/check-3d-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commandId, modelName: modeName }),
+        });
+        const checkData = await checkRes.json();
+        status = checkData.status;
+        glbPresignedUrl = checkData['glb_presigned_url'] || '';
+        usdzPresignedUrl = checkData['usdz_presigned_url'] || '';
+        if (status === 'Success' && (glbPresignedUrl || usdzPresignedUrl)) break;
+        if (status === 'Failed' || status === 'ExecutionTimedOut') throw new Error('3D generation failed.');
+        await new Promise(res => setTimeout(res, 5000));
+      }
+      if (status !== 'Success' || (!glbPresignedUrl && !usdzPresignedUrl)) throw new Error('3D model not generated or URL missing.');
+      setGeneratedModels(prev => ({
+        ...prev,
+        [modeName]: { glb: glbPresignedUrl, usdz: usdzPresignedUrl },
+      }));
+    } catch (err: any) {
+      setGenerate3DError(prev => ({ ...prev, [modeName]: err.message || '3D model generation failed.' }));
+    } finally {
+      setIsGenerating3D(prev => ({ ...prev, [modeName]: false }));
     }
   };
 
@@ -460,14 +480,14 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 <Button
                   type="button"
                   className="w-full mt-2 py-3 text-base"
-                  disabled={isGenerating3D}
+                  disabled={isGenerating3D.tripoSR}
                   onClick={handleGenerate3DModel}
                 >
-                  {isGenerating3D ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  {isGenerating3D ? 'Generating 3D Model...' : 'Generate 3D Model'}
+                  {isGenerating3D.tripoSR ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {isGenerating3D.tripoSR ? 'Generating 3D Model...' : 'Generate 3D Model'}
                 </Button>
               )}
-              {generate3DError && <p className="text-red-500 mt-2">{generate3DError}</p>}
+              {generate3DError.tripoSR && <p className="text-red-500 mt-2">{generate3DError.tripoSR}</p>}
             </form>
           </TabsContent>
           <TabsContent value="image">
@@ -509,15 +529,6 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                       >
                         Upload Image
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={handleCameraCapture}
-                      >
-                        <Camera className="h-4 w-4 mr-2" />
-                        Take Photo
-                      </Button>
                     </div>
                     <input
                       ref={fileInputRef}
@@ -556,14 +567,14 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 <Button
                   type="button"
                   className="w-full mt-2 py-3 text-base"
-                  disabled={isGenerating3D}
+                  disabled={isGenerating3D.tripoSR}
                   onClick={handleGenerate3DModel}
                 >
-                  {isGenerating3D ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  {isGenerating3D ? 'Generating 3D Model...' : 'Generate 3D Model'}
+                  {isGenerating3D.tripoSR ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {isGenerating3D.tripoSR ? 'Generating 3D Model...' : 'Generate 3D Model'}
                 </Button>
               )}
-              {generate3DError && <p className="text-red-500 mt-2">{generate3DError}</p>}
+              {generate3DError.tripoSR && <p className="text-red-500 mt-2">{generate3DError.tripoSR}</p>}
             </form>
           </TabsContent>
         </Tabs>
@@ -596,41 +607,36 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
           </CardContent>
         </Card>
         {/* 3D Model Preview */}
-        <Card className="h-full w-full">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">3D Model Preview</CardTitle>
-            <CardDescription>
-              {generatedModel
-                ? "Your generated 3D model is ready to view"
-                : "Your generated 3D model will appear here"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-[220px] bg-gradient-to-br from-slate-100 via-blue-50 to-pink-50 rounded-md overflow-hidden">
-              {isGenerating3D ? (
-                <TechyWaiting label="Generating 3D Model..." percent={40} color="from-blue-400 via-purple-400 to-pink-400" icon={<Box className="h-10 w-10 text-white drop-shadow-lg animate-bounce" />} />
-              ) : generatedModel ? (
-                <ModelViewer
-                  src={generatedModel.glb || ''}
-                  iosSrc={generatedModel.usdz || ''}
-                  alt="Generated 3D model"
-                />
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                  <Wand2 className="h-12 w-12 mb-4" />
-                  <p>Generate an image and 3D model to preview</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-          {generatedModel && (
-            <CardFooter>
-              <Button className="w-full py-3 text-base" onClick={handleSave}>
-                Save to My Assets
-              </Button>
-            </CardFooter>
-          )}
-        </Card>
+        {["tripoSR", "step1x-3d"].map(mode => (
+          <Card key={mode} className="h-full w-full mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">{mode} 3D Model Preview</CardTitle>
+              <CardDescription>
+                {generatedModels[mode]
+                  ? "Your generated 3D model is ready to view"
+                  : "Your generated 3D model will appear here"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full h-[220px] bg-gradient-to-br from-slate-100 via-blue-50 to-pink-50 rounded-md overflow-hidden">
+                {isGenerating3D[mode] ? (
+                  <TechyWaiting label={`Generating 3D Model (${mode})...`} percent={40} color="from-blue-400 via-purple-400 to-pink-400" icon={<Box className="h-10 w-10 text-white drop-shadow-lg animate-bounce" />} />
+                ) : generatedModels[mode] ? (
+                  <ModelViewer
+                    src={generatedModels[mode]?.glb || ''}
+                    iosSrc={generatedModels[mode]?.usdz || ''}
+                    alt={`Generated 3D model (${mode})`}
+                  />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <Wand2 className="h-12 w-12 mb-4" />
+                    <p>Generate an image and 3D model to preview</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )

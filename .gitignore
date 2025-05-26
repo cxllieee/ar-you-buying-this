@@ -63,3 +63,4 @@ image-lambda/
 
 # Ignore the Archive.zip file
 Archive.zip
+lambda/check-3d-job.py

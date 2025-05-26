@@ -11,11 +11,14 @@ def lambda_handler(event, context):
     try:
         # Get command ID from event
         commandId = body['commandId']
+        modelName = body['modelName']
         
         # Get command status from Systems Manager
         response = ssm.get_command_invocation(
             CommandId=commandId,
             InstanceId="i-0909bb5ffeda3d36e" # ec2-triposr
+            # if modelName=tripo
+                # instanceId = 
         )
         
         command_status = response['Status']
@@ -33,6 +36,8 @@ def lambda_handler(event, context):
             # Return S3 URI if found
             if 'Item' in ddb_response:
                 glb_s3_uri = ddb_response['Item']['glb_s3_uri']
+                modelId = ddb_response['Item']['modelId']
+                print(modelId)
                 usdz_s3_uri = glb_s3_uri.replace('.glb', '.usdz')
                 print(glb_s3_uri)
                 print(usdz_s3_uri)
@@ -45,13 +50,14 @@ def lambda_handler(event, context):
                     Parameters={
                         'commands': [
                             'cd /home/ssm-user',
-                            '. /home/ssm-user/.bash_profile',
-                            'cd ConvertGLB',
-                            'pyenv local myenv',
-                            f'aws s3 cp {glb_s3_uri} asset.glb',
-                            'export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1',
-                            'python3 run.py',
-                            f'aws s3 cp asset.usdz {usdz_s3_uri}'
+                            f'sudo su - ssm-user -c "\
+                            . /home/ssm-user/.bash_profile && \
+                            cd ConvertGLB && \
+                            pyenv local myenv && \
+                            aws s3 cp {glb_s3_uri} glb_assets/{modelId}.glb && \
+                            export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 && \
+                            python3 run.py --modelId {modelId} && \
+                            aws s3 cp usdz_assets/{modelId}.usdz {usdz_s3_uri}"'
                         ]
                     }
                 )
@@ -97,8 +103,8 @@ def lambda_handler(event, context):
                         'status': 'Success',
                         'glb_s3_uri': glb_s3_uri,
                         'glb_presigned_url': glb_presigned_url,
-                        # 'usdz_s3_uri': usdz_s3_uri,
-                        # 'usdz_presigned_url': usdz_presigned_url
+                        'usdz_s3_uri': usdz_s3_uri,
+                        'usdz_presigned_url': usdz_presigned_url
                     })
                 }
             else:

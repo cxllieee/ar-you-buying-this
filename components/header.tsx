@@ -22,68 +22,13 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" aria-label="Menu">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-              <nav className="flex flex-col gap-4 mt-8">
-                <Button variant="ghost" onClick={() => setCategoryFilter("")}>
-                  All Assets
-                </Button>
-                <Button variant="ghost" onClick={() => setCategoryFilter("office")}>
-                  Office
-                </Button>
-                <Button variant="ghost" onClick={() => setCategoryFilter("furniture")}>
-                  Furniture
-                </Button>
-                <Button variant="ghost" onClick={() => setCategoryFilter("retail")}>
-                  Retail
-                </Button>
-                <Button variant="ghost" onClick={() => setCategoryFilter("industrial")}>
-                  Industrial
-                </Button>
-                <Button variant="ghost" onClick={() => setCategoryFilter("generated-assets")}>
-                  Generated Assets
-                </Button>
-              </nav>
-            </SheetContent>
-          </Sheet>
+      <div className="container flex h-16 items-center justify-center px-4">
+        <div className="flex items-center gap-4 md:gap-6 justify-center w-full">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="Logo" className="h-8 w-auto" width={32} height={32} />
             <span className="font-bold text-xl md:text-2xl text-primary">AR you buying this</span>
           </Link>
-        </div>
-
-        <div className="hidden md:flex items-center gap-6">
-          <nav className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => setCategoryFilter("")}>
-              All
-            </Button>
-            <Button variant="ghost" onClick={() => setCategoryFilter("office")}>
-              Office
-            </Button>
-            <Button variant="ghost" onClick={() => setCategoryFilter("furniture")}>
-              Furniture
-            </Button>
-            <Button variant="ghost" onClick={() => setCategoryFilter("retail")}>
-              Retail
-            </Button>
-            <Button variant="ghost" onClick={() => setCategoryFilter("industrial")}>
-              Industrial
-            </Button>
-            <Button variant="ghost" onClick={() => setCategoryFilter("generated-assets")}>
-              Generated Assets
-            </Button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <form onSubmit={handleSearch} className="relative hidden md:flex items-center">
+          <form onSubmit={handleSearch} className="relative hidden md:flex items-center ml-6">
             <Search className="absolute left-2.5 h-4 w-4 text-muted-foreground" />
             <Input type="search" name="search" placeholder="Search assets..." className="w-[200px] lg:w-[300px] pl-8" />
           </form>
