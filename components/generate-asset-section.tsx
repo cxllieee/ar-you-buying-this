@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { AlertTriangle, CheckCircle } from "lucide-react"
 
 interface AssetData {
   id: string
@@ -59,6 +61,99 @@ interface GenerateAssetSectionProps {
   preloadedAsset?: any;
   onTabChange?: (tab: string) => void;
   onClearCustomize?: () => void;
+}
+
+const CONTENT_GUIDELINES = [
+  "Violence and gore",
+  "Abuse and harassment content",
+  "Hate speech and extremist content",
+  "Nudity and sexually explicit material",
+  "Self-harm related content",
+  "Chemical, biological, radiological and nuclear (CBRN) weapons/threats",
+  "Profanity and insults",
+  "Cultural appropriation and harmful stereotypes",
+  "Content that could cause physical/emotional harm",
+  "Deceptive political or social misinformation (e.g. human faces/models)"
+];
+
+const NOT_ALLOWED_KEYWORDS = [
+  "Violence",
+  "Adult content",
+  "Hate speech",
+  "Weapons",
+  "Harassment",
+  "Misinformation"
+];
+
+function ContentGuidelinesDropdown() {
+  return (
+    <Accordion type="single" collapsible className="mb-2">
+      <AccordionItem value="guidelines">
+        <AccordionTrigger className="text-purple-700 font-medium text-base flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-purple-400" /> Content Guidelines
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="mb-2">
+            <div className="font-semibold text-green-700 mb-1 flex items-center gap-1">
+              <CheckCircle className="h-4 w-4 text-green-500" /> What's Allowed
+            </div>
+            <div className="flex flex-wrap gap-2 mb-2 bg-green-50 p-2 rounded">
+              <span className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs">Furniture</span>
+              <span className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs">Office items</span>
+              <span className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs">Decor</span>
+              <span className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs">Retail products</span>
+              <span className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs">Abstract designs</span>
+            </div>
+          </div>
+          <div className="mb-2">
+            <div className="font-semibold text-red-700 mb-1 flex items-center gap-1">
+              <AlertTriangle className="h-4 w-4 text-red-500" /> Not Allowed
+            </div>
+            <div className="flex flex-wrap gap-2 mb-2 bg-red-50 p-2 rounded">
+              {NOT_ALLOWED_KEYWORDS.map((item) => (
+                <span key={item} className="bg-red-200 text-red-900 px-2 py-0.5 rounded text-xs font-medium">{item}</span>
+              ))}
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            Content is automatically checked. Focus on furniture, decor, and retail items for best results.
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+const MODEL_INFOS = {
+  tripoSR: {
+    title: "TripoSR",
+    url: "https://www.triposrai.com/",
+    description: "TripoSR is a state-of-the-art, open-source model for fast 3D reconstruction from a single image, collaboratively developed by Tripo AI and Stability AI. It generates a 3D asset in about 1-2 minutes."
+  },
+  "step1x-3d": {
+    title: "Step1X-3D",
+    url: "https://github.com/stepfun-ai/Step1X-3D",
+    description: "Step1X-3D generates high-quality 3D assets with detailed geometry and versatile texture maps. It excels at aligning surface geometry and textures, but may take up to 10 minutes to generate."
+  }
+};
+
+function ModelInfoDropdown({ mode }: { mode: 'tripoSR' | 'step1x-3d' }) {
+  const info = MODEL_INFOS[mode];
+  if (!info) return null;
+  return (
+    <Accordion type="single" collapsible className="mb-2">
+      <AccordionItem value="info">
+        <AccordionTrigger className="text-blue-700 font-medium text-base flex items-center gap-2">
+          <span>About {info.title}</span>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="text-sm text-gray-700">
+            <a href={info.url} target="_blank" rel="noopener noreferrer" className="underline text-blue-600 font-semibold">{info.title}</a>: {info.description}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
 }
 
 // Update function signature to accept props
@@ -509,6 +604,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
               />
+              <ContentGuidelinesDropdown />
               {imageError && <p className="text-red-500 mb-2">{imageError}</p>}
               <Button
                 type="button"
@@ -597,6 +693,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
               />
+              <ContentGuidelinesDropdown />
               <Button
                 type="button"
                 className="w-full mt-2 py-3 text-base"
@@ -650,7 +747,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
           </CardContent>
         </Card>
         {/* 3D Model Preview */}
-        {["tripoSR", "step1x-3d"].map(mode => (
+        {([
+          'tripoSR',
+          'step1x-3d',
+        ] as const).map((mode) => (
           <Card key={mode} className="h-full w-full mb-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">{mode} 3D Model Preview</CardTitle>
@@ -677,6 +777,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                   </div>
                 )}
               </div>
+              <ModelInfoDropdown mode={mode} />
             </CardContent>
           </Card>
         ))}

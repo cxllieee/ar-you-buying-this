@@ -12,6 +12,7 @@ import { CuboidIcon, Search } from "lucide-react"
 import Image from "next/image"
 import dynamic from "next/dynamic"
 import animationData from "../animation/Animation - 1747803212907.json"
+import FeedbackCard from "@/components/FeedbackCard"
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false })
 
@@ -106,6 +107,7 @@ export default function Home() {
         <span className="text-xs text-gray-500 text-center">Contributors: Callie Cheong (@calliecg), Lester Sim (@lestesim), Jennifer Lin (@awsjlin), Bryan Chen (@bryancwh), Yong Xuan (@yxchua)</span>
       </div>
       <Footer />
+      <FeedbackCard />
       <CustomizeModal />
       <GenerateModal />
     </div>
