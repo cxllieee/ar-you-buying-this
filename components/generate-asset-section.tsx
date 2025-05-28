@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -96,6 +96,40 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     tripoSR: null,
     "step1x-3d": null,
   });
+
+  useEffect(() => {
+    if (preloadedAsset && preloadedAsset.id) {
+      fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/asset-presigned-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: JSON.stringify({ item_id: preloadedAsset.id }) })
+      })
+        .then(res => res.json())
+        .then(data => {
+          // Parse the body field for s3_presigned_url
+          let url = null;
+          if (data.body) {
+            try {
+              const parsed = JSON.parse(data.body);
+              url = parsed.s3_presigned_url;
+            } catch {}
+          }
+          if (url) {
+            setImagePreview(url);
+            // Do not setGeneratedImage here
+          }
+        })
+        .catch(() => {
+          setImagePreview(null);
+        });
+      setFormData(formData => ({
+        ...formData,
+        name: preloadedAsset.name || '',
+        description: preloadedAsset.description || ''
+      }));
+      setActiveTab('image');
+    }
+  }, [preloadedAsset]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -219,28 +253,37 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
   }
 
   const handleGenerateImage = async () => {
-    if (!selectedImage || !formData.description) return;
     setIsGeneratingImage(true);
     setImageError(null);
     setGeneratedImage(null);
     try {
-      const requestData = new FormData();
-      requestData.append('image', selectedImage);
-      requestData.append('prompt', formData.description);
-      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/image-to-image', {
-        method: 'POST',
-        body: requestData
-      });
-      if (!response.ok) throw new Error('Failed to generate image');
-      const data = await response.json();
-      setGeneratedImage(data.imageUrl || data.presignedUrl);
-      // Optionally update asset name from imageUrl if needed
-      if (!formData.name && (data.imageUrl || data.presignedUrl)) {
-        const url = data.imageUrl || data.presignedUrl;
-        const match = url.match(/generated-images\/(.*?)\.(png|jpg|jpeg)/);
-        if (match && match[1]) {
-          setFormData({ ...formData, name: match[1] });
-        }
+      // If the reference image is from a preloaded asset (S3 URI), send JSON
+      if (imagePreview && imagePreview.startsWith('https://') && !selectedImage) {
+        const s3uri = presignedUrlToS3Uri(imagePreview);
+        const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/image-to-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            s3uri,
+            prompt: formData.description,
+            item_id: formData.name || ''
+          })
+        });
+        if (!response.ok) throw new Error('Failed to generate image');
+        const data = await response.json();
+        setGeneratedImage(data.imageUrl || data.presignedUrl);
+      } else if (selectedImage) {
+        // Fallback to file upload (current behavior)
+        const requestData = new FormData();
+        requestData.append('image', selectedImage);
+        requestData.append('prompt', formData.description || '');
+        const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/image-to-image', {
+          method: 'POST',
+          body: requestData
+        });
+        if (!response.ok) throw new Error('Failed to generate image');
+        const data = await response.json();
+        setGeneratedImage(data.imageUrl || data.presignedUrl);
       }
     } catch (err) {
       setImageError('Image generation failed. Try again.');
@@ -558,7 +601,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 type="button"
                 className="w-full mt-2 py-3 text-base"
                 onClick={handleGenerateImage}
-                disabled={!selectedImage || !formData.description}
+                disabled={!(selectedImage || imagePreview) || !formData.description}
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Generate Image

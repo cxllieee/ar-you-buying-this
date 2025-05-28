@@ -25,11 +25,17 @@ export default function Home() {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
         <div className="max-w-2xl w-full flex flex-col items-center gap-6">
-          <div className="w-32 h-32 rounded-full shadow-xl bg-white flex items-center justify-center mb-2 animate-fade-in">
+          <div className="w-32 h-32 rounded-full shadow-xl bg-white flex items-center justify-center mb-1 animate-fade-in">
             <Lottie animationData={animationData} loop={true} style={{ width: '110px', height: '110px' }} />
           </div>
           <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent animate-gradient-x">AR You Buying This?</h1>
           <h2 className="text-xl font-semibold text-center text-blue-700 animate-fade-in">Transforming Retail with Generative 3D & AR</h2>
+          <button
+            className="mt-4 px-8 py-3 bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 text-white rounded-lg shadow-xl hover:scale-105 hover:shadow-2xl text-lg font-semibold transition-all duration-200 animate-fade-in"
+            onClick={() => setShowDemo(true)}
+          >
+            Try Demo
+          </button>
           <section className="bg-white/80 rounded-2xl p-6 shadow-2xl w-full border border-blue-100 animate-fade-in">
             <p className="text-gray-700 mb-2">
               Instantly turn text or images into high-fidelity 3D assets using AI, and view them in your space with web-based AR. Shop smarter, reduce returns, and experience the future of retail.
@@ -54,20 +60,6 @@ export default function Home() {
               <span className="text-xs text-gray-500 text-center">Contributors: Callie Cheong (@calliecg), Lester Sim (@lestesim), Jennifer Lin (@awsjlin), Bryan Chen (@bryancwh), Yong Xuan (@yxchua)</span>
             </div>
           </section>
-          <a
-            href="https://github.com/cxllieee/ar-you-buying-this"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-center"
-          >
-            View the code on GitHub
-          </a>
-          <button
-            className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 text-white rounded-lg shadow-xl hover:scale-105 hover:shadow-2xl text-lg font-semibold transition-all duration-200 animate-fade-in"
-            onClick={() => setShowDemo(true)}
-          >
-            Try Demo
-          </button>
         </div>
       </main>
     )
