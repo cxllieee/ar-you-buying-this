@@ -156,6 +156,23 @@ function ModelInfoDropdown({ mode }: { mode: 'tripoSR' | 'step1x-3d' }) {
   );
 }
 
+function NovaCanvasInfoDropdown() {
+  return (
+    <Accordion type="single" collapsible className="mb-2">
+      <AccordionItem value="info">
+        <AccordionTrigger className="text-blue-700 font-medium text-base flex items-center gap-2">
+          <span>About Nova Canvas</span>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="text-sm text-gray-700">
+            <a href="https://aws.amazon.com/ai/generative-ai/nova/creative/" target="_blank" rel="noopener noreferrer" className="underline text-blue-600 font-semibold">Amazon Nova Canvas</a> is a state-of-the-art image generation model from AWS that creates high-quality images from text and image inputs. It is ideal for product design, advertising, and creative workflows, and supports precise editing and background removal. <a href="https://docs.aws.amazon.com/ai/responsible-ai/nova-canvas/overview.html" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">Learn more</a>.
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
 // Update function signature to accept props
 export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTabChange, onClearCustomize }: GenerateAssetSectionProps) {
   const [activeTab, setActiveTab] = useState(initialTab)
@@ -744,6 +761,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 </div>
               )}
             </div>
+            <NovaCanvasInfoDropdown />
           </CardContent>
         </Card>
         {/* 3D Model Preview */}
