@@ -32,6 +32,8 @@ next-env.d.ts
 __pycache__/
 *.pyc
 .venv/
+get-recent-presigned.py
+get-latest-generated.py
 
 # Build artifacts
 layer.zip

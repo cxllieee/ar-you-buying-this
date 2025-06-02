@@ -57,15 +57,27 @@ export default function FeedbackCard() {
         {open && (
           <Card id="feedback-card-content" className="rounded-t-none rounded-b-xl border-t-0 shadow-xl animate-fade-in bg-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base sm:text-lg">Help us improve your AR shopping experience</CardTitle>
-              <CardDescription>Your feedback helps us make our demo better</CardDescription>
+              {/* Removed CardTitle and CardDescription */}
             </CardHeader>
             <CardContent>
               {submitted ? (
-                <div className="text-center py-6">
-                  <div className="text-2xl mb-2">🎉</div>
-                  <div className="font-semibold text-lg mb-1">Thank you for your feedback!</div>
-                  <div className="text-muted-foreground text-sm">We appreciate your input.</div>
+                <div className="text-center py-3">
+                  <div className="text-xl mb-1">🎉</div>
+                  <div className="font-semibold text-base mb-1">Thanks for your feedback!</div>
+                  <div className="text-muted-foreground text-xs mb-2">We appreciate it.</div>
+                  <Button
+                    className="mt-1 py-2 px-4 text-sm rounded-lg bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    onClick={() => {
+                      setSubmitted(false);
+                      setRating(0);
+                      setEase("");
+                      setFeature("");
+                      setFeedback("");
+                      setError("");
+                    }}
+                  >
+                    Submit Another Feedback
+                  </Button>
                 </div>
               ) : (
                 <form className="space-y-4" onSubmit={handleSubmit}>

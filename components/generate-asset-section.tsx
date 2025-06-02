@@ -156,16 +156,16 @@ function ModelInfoDropdown({ mode }: { mode: 'tripoSR' | 'step1x-3d' }) {
   );
 }
 
-function NovaCanvasInfoDropdown() {
+function BedrockStabilityAIInfoDropdown() {
   return (
     <Accordion type="single" collapsible className="mb-2">
       <AccordionItem value="info">
         <AccordionTrigger className="text-blue-700 font-medium text-base flex items-center gap-2">
-          <span>About Nova Canvas</span>
+          <span>About Bedrock Stability AI</span>
         </AccordionTrigger>
         <AccordionContent>
           <div className="text-sm text-gray-700">
-            <a href="https://aws.amazon.com/ai/generative-ai/nova/creative/" target="_blank" rel="noopener noreferrer" className="underline text-blue-600 font-semibold">Amazon Nova Canvas</a> is a state-of-the-art image generation model from AWS that creates high-quality images from text and image inputs. It is ideal for product design, advertising, and creative workflows, and supports precise editing and background removal. <a href="https://docs.aws.amazon.com/ai/responsible-ai/nova-canvas/overview.html" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">Learn more</a>.
+            Amazon Bedrock provides access to leading generative AI models, including Stability AI's Stable Diffusion for high-quality text-to-image and image-to-image generation. Ideal for creative and product design workflows. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-stability-diffusion.html" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">Learn more</a>.
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -338,31 +338,31 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     setGeneratedModel(null)
   }
 
-  const handleSave = async () => {
-    if (!generatedModel) return;
-    try {
-      const saveData = {
-        name: formData.name,
-        description: formData.description,
-        category: formData.category,
-        material: formData.material,
-        color: formData.color,
-        price: formData.price,
-        dimensions: formData.dimensions,
-        modelUrl: generatedModel
-      };
-      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/save-generated-asset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData)
-      });
-      if (!response.ok) throw new Error('Failed to save asset');
-      alert('3D model saved to your assets!');
-      handleReset();
-    } catch {
-      alert('Failed to save asset.');
-    }
-  }
+  // const handleSave = async () => {
+  //   if (!generatedModel) return;
+  //   try {
+  //     const saveData = {
+  //       name: formData.name,
+  //       description: formData.description,
+  //       category: formData.category,
+  //       material: formData.material,
+  //       color: formData.color,
+  //       price: formData.price,
+  //       dimensions: formData.dimensions,
+  //       modelUrl: generatedModel
+  //     };
+  //     const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/save-generated-asset', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(saveData)
+  //     });
+  //     if (!response.ok) throw new Error('Failed to save asset');
+  //     alert('3D model saved to your assets!');
+  //     handleReset();
+  //   } catch {
+  //     alert('Failed to save asset.');
+  //   }
+  // }
 
   const handleGenerateImage = async () => {
     setIsGeneratingImage(true);
@@ -409,7 +409,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     setImageError(null);
     setGeneratedImage(null);
     try {
-      const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image", {
+      const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: imagePrompt })
@@ -494,26 +494,26 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     }
   };
 
-  const handleSaveToS3 = async () => {
-    if (!selectedImage) return;
-    const formDataToSend = new FormData();
-    formDataToSend.append('image', selectedImage);
-    formDataToSend.append('name', formData.name || 'uploaded-image');
-    try {
-      const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/upload-image', {
-        method: 'POST',
-        body: formDataToSend,
-      });
-      const data = await response.json();
-      if (data.s3uri) {
-        alert(`Saved to: ${data.s3uri}`);
-      } else {
-        alert('Failed to save image to S3.');
-      }
-    } catch (err) {
-      alert('Error saving image to S3.');
-    }
-  };
+  // const handleSaveToS3 = async () => {
+  //   if (!selectedImage) return;
+  //   const formDataToSend = new FormData();
+  //   formDataToSend.append('image', selectedImage);
+  //   formDataToSend.append('name', formData.name || 'uploaded-image');
+  //   try {
+  //     const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/upload-image', {
+  //       method: 'POST',
+  //       body: formDataToSend,
+  //     });
+  //     const data = await response.json();
+  //     if (data.s3uri) {
+  //       alert(`Saved to: ${data.s3uri}`);
+  //     } else {
+  //       alert('Failed to save image to S3.');
+  //     }
+  //   } catch (err) {
+  //     alert('Error saving image to S3.');
+  //   }
+  // };
 
   const poll3DJob = async (commandId: string, modeName: string) => {
     setIsGenerating3D(prev => ({ ...prev, [modeName]: true }));
@@ -761,7 +761,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 </div>
               )}
             </div>
-            <NovaCanvasInfoDropdown />
+            <BedrockStabilityAIInfoDropdown />
           </CardContent>
         </Card>
         {/* 3D Model Preview */}

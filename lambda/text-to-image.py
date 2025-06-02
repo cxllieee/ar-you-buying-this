@@ -44,40 +44,37 @@ def lambda_handler(event, context):
                 'headers': cors_headers,
                 'body': json.dumps({'error': 'Missing prompt'})
             }
+        # Compose the prompt for the new model
         enhanced_prompt = (
-            f"Focus on retail products, but generate the item described below even if it is not retail. "
-            f"Create a high-quality image of the described item, isolated on a fully transparent background. "
-            f"No background, no scene, no environment, no people, no text, no watermark. "
-            f"Show the item in a top down manner from a 3/4 (three-quarter) perspective, clearly showing the front, side, and top. "
-            f"Ensure the entire item is fully visible in the image, with no cropping or cut-off edges. "
-            f"Generate only one image of the item. "
-            f"Description: {base_prompt}"
+            f"{base_prompt}. "
+            "Show the item on a plain white background, from a 3/4 top corner perspective, fully visible, no cropping, no people, no text, no watermark, no shadows, high quality, product photography style."
         )
-        client = boto3.client("bedrock-runtime", region_name="us-east-1")
+        client = boto3.client("bedrock-runtime", region_name="us-west-2")
         s3 = boto3.client('s3', region_name="us-west-2")
-        model_id = "amazon.nova-canvas-v1:0"
-        seed = random.randint(0, 858993460)
+        model_id = "stability.sd3-5-large-v1:0"
+        # Compose the request body as required by the new model
         native_request = {
-            "taskType": "TEXT_IMAGE",
-            "textToImageParams": {
-                "text": enhanced_prompt,
-                "negativeText": "background, scene, environment, people, text, watermark, logo, floor, table, surface, shadow, reflection"
-            },
-            "imageGenerationConfig": {
-                "seed": seed,
-                "quality": "standard",
-                "height": 720,
-                "width": 1280,
-                "numberOfImages": 1,
-            },
+            "prompt": enhanced_prompt,
+            "mode": "text-to-image",
+            "aspect_ratio": "1:1",
+            "output_format": "jpeg"
         }
         request = json.dumps(native_request)
         response = client.invoke_model(
-            modelId=model_id, 
+            modelId=model_id,
+            contentType="application/json",
+            accept="application/json",
             body=request
         )
         model_response = json.loads(response["body"].read())
-        base64_image_data = model_response["images"][0]
+        # The response is expected to contain a base64-encoded JPEG image
+        base64_image_data = model_response["images"][0] if "images" in model_response and model_response["images"] else None
+        if not base64_image_data:
+            return {
+                'statusCode': 500,
+                'headers': cors_headers,
+                'body': json.dumps({'error': 'No image returned from model'})
+            }
         binary_image_data = base64.b64decode(base64_image_data)
         def sanitize_filename(name):
             name = name.lower()
@@ -91,37 +88,18 @@ def lambda_handler(event, context):
         if asset_name:
             safe_name = sanitize_filename(asset_name)
             if not safe_name:
-                filename = f"{short_uuid()}.png"
+                filename = f"{short_uuid()}.jpg"
             else:
-                filename = f"{safe_name}-{short_uuid()}.png"
+                filename = f"{safe_name}-{short_uuid()}.jpg"
         else:
-            filename = f"{short_uuid()}.png"
+            filename = f"{short_uuid()}.jpg"
         filepath = f"generated-images/{filename}"
         bucket_name = 'sg-summit-generated-assets-853138055027'
-        background_removal_request = {
-            "taskType": "BACKGROUND_REMOVAL",
-            "backgroundRemovalParams": {
-                "image": base64_image_data
-            }
-        }
-        background_removed_response = client.invoke_model(
-            modelId="amazon.nova-canvas-v1:0",
-            body=json.dumps(background_removal_request)
-        )
-        background_removed_model_response = json.loads(background_removed_response["body"].read())
-        processed_image_data = base64.b64decode(background_removed_model_response["images"][0])
-        background_removed_filepath = f"processed-images/{filename}"
-        s3.put_object(
-            Bucket=bucket_name,
-            Key=background_removed_filepath,
-            Body=processed_image_data,
-            ContentType='image/png'
-        )
         s3.put_object(
             Bucket=bucket_name,
             Key=filepath,
             Body=binary_image_data,
-            ContentType='image/png'
+            ContentType='image/jpeg'
         )
         presigned_url = s3.generate_presigned_url(
             'get_object',

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { ProductGrid } from "@/components/product-grid"
 import { Footer } from "@/components/footer"
@@ -13,14 +13,78 @@ import Image from "next/image"
 import dynamic from "next/dynamic"
 import animationData from "../animation/Animation - 1747803212907.json"
 import FeedbackCard from "@/components/FeedbackCard"
+import { ModelViewer } from "@/components/model-viewer"
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false })
+
+type RecentAsset = {
+  modelId: string;
+  commandId: string;
+  timestamp_added: string;
+  glbPresignedUrl?: string;
+  usdzPresignedUrl?: string;
+};
 
 export default function Home() {
   const [showDemo, setShowDemo] = useState(false)
   const [activeTab, setActiveTab] = useState("browse")
   const [generateTab, setGenerateTab] = useState("text")
   const [customizeAsset, setCustomizeAsset] = useState(null)
+  const [recentAssets, setRecentAssets] = useState<RecentAsset[]>([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "recent") {
+      setRecentLoading(true);
+      fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/get-latest-generated', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          console.log("get-latest-generated data:", data);
+          let items = [];
+          if (Array.isArray(data.body)) {
+            items = data.body;
+          } else if (typeof data.body === 'string') {
+            items = JSON.parse(data.body);
+          } else if (Array.isArray(data)) {
+            items = data;
+          } else {
+            items = [];
+          }
+          console.log("Parsed items:", items);
+          // Batch call get-recent-presigned with all asset S3 URIs
+          return fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/get-recent-presigned', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              assets: Array.isArray(items) ? items.map((item) => ({
+                modelId: item.modelId,
+                commandId: item.commandId,
+                timestamp_added: item.timestamp_added,
+                glb_s3_uri: item.glb_s3_uri,
+                usdz_s3_uri: item.usdz_s3_uri,
+              })) : [],
+            }),
+          })
+            .then(res => res.json())
+            .then(data => {
+              console.log("get-recent-presigned data:", data);
+              let assets = data;
+              if (typeof data.body === 'string') {
+                assets = JSON.parse(data.body);
+              } else if (Array.isArray(data.body)) {
+                assets = data.body;
+              } else if (Array.isArray(data)) {
+                assets = data;
+              } else {
+                assets = [];
+              }
+              return assets;
+            });
+        })
+        .then(setRecentAssets)
+        .finally(() => setRecentLoading(false));
+    }
+  }, [activeTab]);
 
   if (!showDemo) {
     return (
@@ -72,10 +136,13 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-1 py-4 sm:px-2 sm:py-8">
         <div className="w-full max-w-full sm:max-w-5xl bg-white/80 rounded-2xl shadow-2xl border border-blue-100 p-2 sm:p-4 md:p-8 animate-fade-in overflow-x-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="flex w-full mb-4 sm:mb-6 bg-gradient-to-r from-purple-100 via-blue-100 to-pink-100 rounded-xl shadow overflow-x-auto">
+            <TabsList className="flex w-full mb-4 sm:mb-6 bg-gradient-to-r from-purple-100 via-blue-100 to-pink-100 rounded-xl shadow overflow-x-auto justify-center gap-1 sm:gap-4">
               <TabsTrigger value="browse" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-blue-700 px-2 sm:px-6 py-2 min-h-[44px]">
                 <Search className="h-5 w-5" />
                 <span className="truncate">Browse Assets</span>
+              </TabsTrigger>
+              <TabsTrigger value="recent" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-blue-700 px-2 sm:px-6 py-2 min-h-[44px]">
+                <span className="truncate">Recently Generated Assets</span>
               </TabsTrigger>
               <TabsTrigger value="generate" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-purple-700 px-2 sm:px-6 py-2 min-h-[44px]">
                 <CuboidIcon className="h-5 w-5" />
@@ -99,6 +166,49 @@ export default function Home() {
                 onTabChange={setGenerateTab}
                 onClearCustomize={() => setCustomizeAsset(null)}
               />
+            </TabsContent>
+
+            <TabsContent value="recent" className="mt-0">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold tracking-tight">Recently Generated Assets</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {recentAssets.length} asset{recentAssets.length !== 1 ? "s" : ""} found
+                    </span>
+                  </div>
+                </div>
+                {recentLoading ? (
+                  <div className="flex items-center justify-center h-[400px]">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                      <p className="mt-4 text-muted-foreground">Loading recently generated assets...</p>
+                    </div>
+                  </div>
+                ) : Array.isArray(recentAssets) && recentAssets.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                    <h3 className="text-xl font-semibold">No recently generated assets found.</h3>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.isArray(recentAssets) && recentAssets.map((asset, idx) => (
+                      <div key={asset.commandId || idx} className="border border-gray-200 rounded-lg p-4 bg-white shadow flex flex-col items-center">
+                        <div className="w-full h-48 mb-2 flex items-center justify-center bg-slate-100 rounded">
+                          {asset.glbPresignedUrl ? (
+                            <ModelViewer
+                              src={asset.glbPresignedUrl}
+                              iosSrc={asset.usdzPresignedUrl}
+                              alt={asset.modelId}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400">No Preview</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
