@@ -136,17 +136,65 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-1 py-4 sm:px-2 sm:py-8">
         <div className="w-full max-w-full sm:max-w-5xl bg-white/80 rounded-2xl shadow-2xl border border-blue-100 p-2 sm:p-4 md:p-8 animate-fade-in overflow-x-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="flex w-full mb-4 sm:mb-6 bg-gradient-to-r from-purple-100 via-blue-100 to-pink-100 rounded-xl shadow overflow-x-auto justify-center gap-1 sm:gap-4">
-              <TabsTrigger value="browse" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-blue-700 px-2 sm:px-6 py-2 min-h-[44px]">
+            <TabsList
+              className="
+                flex w-full mb-4 sm:mb-6
+                bg-gradient-to-r from-purple-100 via-blue-100 to-pink-100
+                rounded-xl shadow
+                overflow-x-auto
+                gap-2 px-2 py-1
+                sm:overflow-x-visible sm:gap-4
+              "
+            >
+              <TabsTrigger
+                value="browse"
+                className="
+                  flex-shrink-0
+                  min-w-[120px] max-w-[180px]
+                  flex items-center justify-center gap-2
+                  text-xs sm:text-lg font-semibold
+                  text-blue-700 px-3 py-2 rounded-full
+                  transition-all duration-150
+                  data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-purple-700
+                  break-words text-center leading-tight
+                  sm:min-w-0 sm:max-w-none sm:whitespace-nowrap
+                "
+              >
                 <Search className="h-5 w-5" />
-                <span className="truncate">Browse Assets</span>
+                <span>Browse Assets</span>
               </TabsTrigger>
-              <TabsTrigger value="recent" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-blue-700 px-2 sm:px-6 py-2 min-h-[44px]">
-                <span className="truncate">Recently Generated Assets</span>
+              <TabsTrigger
+                value="recent"
+                className="
+                  flex-shrink-0
+                  min-w-[140px] max-w-[200px]
+                  flex items-center justify-center gap-2
+                  text-xs sm:text-lg font-semibold
+                  text-blue-700 px-3 py-2 rounded-full
+                  transition-all duration-150
+                  data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-purple-700
+                  break-words text-center leading-tight
+                  sm:min-w-0 sm:max-w-none sm:whitespace-nowrap
+                "
+              >
+                <span>Generated Assets</span>
               </TabsTrigger>
-              <TabsTrigger value="generate" className="flex-1 min-w-0 flex items-center justify-center gap-2 text-base sm:text-lg font-semibold text-purple-700 px-2 sm:px-6 py-2 min-h-[44px]">
+              <TabsTrigger
+                value="generate"
+                className="
+                  flex-shrink-0
+                  min-w-[120px] max-w-[160px]
+                  flex items-center justify-center gap-2
+                  text-xs sm:text-lg font-semibold
+                  text-purple-700 px-3 py-2 rounded-full
+                  transition-all duration-150
+                  data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-purple-700
+                  break-words text-center leading-tight
+                  sm:min-w-0 sm:max-w-none sm:whitespace-nowrap
+                "
+              >
                 <CuboidIcon className="h-5 w-5" />
-                <span className="truncate">Generate New</span>
+                <span>Generate New</span>
               </TabsTrigger>
             </TabsList>
 
