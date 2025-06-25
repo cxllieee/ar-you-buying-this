@@ -338,31 +338,6 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     setGeneratedModel(null)
   }
 
-  // const handleSave = async () => {
-  //   if (!generatedModel) return;
-  //   try {
-  //     const saveData = {
-  //       name: formData.name,
-  //       description: formData.description,
-  //       category: formData.category,
-  //       material: formData.material,
-  //       color: formData.color,
-  //       price: formData.price,
-  //       dimensions: formData.dimensions,
-  //       modelUrl: generatedModel
-  //     };
-  //     const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/save-generated-asset', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify(saveData)
-  //     });
-  //     if (!response.ok) throw new Error('Failed to save asset');
-  //     alert('3D model saved to your assets!');
-  //     handleReset();
-  //   } catch {
-  //     alert('Failed to save asset.');
-  //   }
-  // }
 
   const handleGenerateImage = async () => {
     setIsGeneratingImage(true);
@@ -378,7 +353,6 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
           body: JSON.stringify({
             s3uri,
             prompt: formData.description,
-            item_id: formData.name || ''
           })
         });
         if (!response.ok) throw new Error('Failed to generate image');
@@ -494,26 +468,6 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
     }
   };
 
-  // const handleSaveToS3 = async () => {
-  //   if (!selectedImage) return;
-  //   const formDataToSend = new FormData();
-  //   formDataToSend.append('image', selectedImage);
-  //   formDataToSend.append('name', formData.name || 'uploaded-image');
-  //   try {
-  //     const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/upload-image', {
-  //       method: 'POST',
-  //       body: formDataToSend,
-  //     });
-  //     const data = await response.json();
-  //     if (data.s3uri) {
-  //       alert(`Saved to: ${data.s3uri}`);
-  //     } else {
-  //       alert('Failed to save image to S3.');
-  //     }
-  //   } catch (err) {
-  //     alert('Error saving image to S3.');
-  //   }
-  // };
 
   const poll3DJob = async (commandId: string, modeName: string) => {
     setIsGenerating3D(prev => ({ ...prev, [modeName]: true }));
@@ -611,12 +565,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
           </TabsList>
           <TabsContent value="text">
             <form className="flex flex-col gap-4">
-              <Label htmlFor="asset-name">Asset Name</Label>
-              <Input id="asset-name" placeholder="Enter asset name" className="mb-2" />
               <Label htmlFor="image-prompt">Description</Label>
               <Textarea
                 id="image-prompt"
-                placeholder="e.g., A modern black office chair with mesh back and gold legs. Include material and color in your description for best results."
+                placeholder="e.g., A modern black office chair with mesh back and gold legs. Include material and color in your description for best results. (Leave empty to return the original image with white background)"
                 className="mb-2"
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
@@ -627,7 +579,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 type="button"
                 className="w-full mt-2 py-3 text-base"
                 onClick={handleGenerateTextToImage}
-                disabled={isGeneratingImage || !imagePrompt}
+                disabled={isGeneratingImage}
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Generate Image
@@ -696,17 +648,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                   </>
                 )}
               </div>
-              <Label htmlFor="asset-name-image">Asset Name</Label>
-              <Input
-                id="asset-name-image"
-                placeholder="Enter asset name"
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-              />
               <Label htmlFor="customisation-prompt">Customisation Prompt</Label>
               <Textarea
                 id="customisation-prompt"
-                placeholder="e.g., Make the chair legs gold, add a logo on the backrest. Include material and color in your description for best results."
+                placeholder="e.g., Make the chair legs gold, add a logo on the backrest. Include material and color in your description for best results. (Leave empty to return the original image with white background)"
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
               />
@@ -715,7 +660,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 type="button"
                 className="w-full mt-2 py-3 text-base"
                 onClick={handleGenerateImage}
-                disabled={!(selectedImage || imagePreview) || !formData.description}
+                disabled={!(selectedImage || imagePreview)}
               >
                 {isGeneratingImage ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                 Generate Image
@@ -757,7 +702,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
                   <Wand2 className="h-12 w-12 mb-4" />
-                  <p>Enter a description and click Generate</p>
+                  <p>Enter a description (or leave empty) and click Generate</p>
                 </div>
               )}
             </div>
