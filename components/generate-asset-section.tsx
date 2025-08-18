@@ -124,6 +124,23 @@ function ContentGuidelinesDropdown() {
   );
 }
 
+const IMAGE_MODEL_OPTIONS = [
+  {
+    id: "amazon-nova-canvas",
+    name: "Amazon Nova Canvas",
+    description: "Amazon's latest image generation model with advanced capabilities",
+    speed: "Medium",
+    quality: "Very High"
+  },
+  {
+    id: "stable-diffusion-3.5-large",
+    name: "Stable Diffusion 3.5 Large",
+    description: "High-quality image generation with excellent detail and composition",
+    speed: "Fast",
+    quality: "High"
+  }
+];
+
 const MODEL_INFOS = {
   tripoSR: {
     title: "TripoSR",
@@ -153,6 +170,32 @@ function ModelInfoDropdown({ mode }: { mode: 'tripoSR' | 'step1x-3d' }) {
         </AccordionContent>
       </AccordionItem>
     </Accordion>
+  );
+}
+
+function ImageModelSelector({ selectedModel, onModelChange }: {
+  selectedModel: string;
+  onModelChange: (modelId: string) => void;
+}) {
+  return (
+    <div className="mb-4">
+      <Label htmlFor="image-model" className="text-sm font-medium mb-2 block">Image Generation Model</Label>
+      <Select value={selectedModel} onValueChange={onModelChange}>
+        <SelectTrigger id="image-model" className="w-full">
+          <SelectValue placeholder="Select a model" />
+        </SelectTrigger>
+        <SelectContent>
+          {IMAGE_MODEL_OPTIONS.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{option.name}</div>
+                <div className="text-xs text-gray-500 truncate">{option.description}</div>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -195,6 +238,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [selectedImageModel, setSelectedImageModel] = useState("amazon-nova-canvas");
   const [modelJobs, setModelJobs] = useState<{ [key: string]: string }>({});
   const [generatedModels, setGeneratedModels] = useState<{ [key: string]: { glb: string; usdz: string } | null }>({
     tripoSR: null,
@@ -353,6 +397,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
           body: JSON.stringify({
             s3uri,
             prompt: formData.description,
+            model: selectedImageModel
           })
         });
         if (!response.ok) throw new Error('Failed to generate image');
@@ -363,6 +408,7 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
         const requestData = new FormData();
         requestData.append('image', selectedImage);
         requestData.append('prompt', formData.description || '');
+        requestData.append('model', selectedImageModel);
         const response = await fetch('https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/image-to-image', {
           method: 'POST',
           body: requestData
@@ -386,7 +432,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
       const response = await fetch("https://litce2s8pg.execute-api.us-west-2.amazonaws.com/prod/generate-image-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt })
+        body: JSON.stringify({ 
+          prompt: imagePrompt,
+          model: selectedImageModel
+        })
       });
       if (!response.ok) throw new Error("Failed to generate image");
       const data = await response.json();
@@ -573,6 +622,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 value={imagePrompt}
                 onChange={e => setImagePrompt(e.target.value)}
               />
+              <ImageModelSelector
+                selectedModel={selectedImageModel}
+                onModelChange={setSelectedImageModel}
+              />
               <ContentGuidelinesDropdown />
               {imageError && <p className="text-red-500 mb-2">{imageError}</p>}
               <Button
@@ -654,6 +707,10 @@ export function GenerateAssetSection({ initialTab = "text", preloadedAsset, onTa
                 placeholder="e.g., Make the chair legs gold, add a logo on the backrest. Include material and color in your description for best results. (Leave empty to return the original image with white background)"
                 value={formData.description}
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
+              />
+              <ImageModelSelector
+                selectedModel={selectedImageModel}
+                onModelChange={setSelectedImageModel}
               />
               <ContentGuidelinesDropdown />
               <Button
